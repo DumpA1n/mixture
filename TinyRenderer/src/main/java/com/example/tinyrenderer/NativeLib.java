@@ -9,10 +9,9 @@ public class NativeLib {
      * A native method that is implemented by the 'tinyrenderer' native library,
      * which is packaged with this application.
      */
-    public native String doRender(String modelName);
 
     public native void startRender(Surface surface, String modelName);
-    public native void stopRender();
+    public native void stopRender(Surface surface);
     public native int isRendering();
 
     static {

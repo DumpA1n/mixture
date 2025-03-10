@@ -66,7 +66,7 @@ public class RendererActivity extends AppCompatActivity {
             @Override
             public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
                 if (n.isRendering() == 1) {
-                    n.stopRender();
+                    n.stopRender(surfaceView.getHolder().getSurface());
                     Toast.makeText(getApplicationContext(), "停止渲染", Toast.LENGTH_LONG).show();
                 }
             }
@@ -75,6 +75,7 @@ public class RendererActivity extends AppCompatActivity {
         findViewById(R.id.render_africa_head).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                n.stopRender(surfaceView.getHolder().getSurface());
                 if (n.isRendering() == 0) {
                     n.startRender(surfaceView.getHolder().getSurface(), "africa_head");
                     Toast.makeText(getApplicationContext(), "开始渲染 [非洲头]", Toast.LENGTH_LONG).show();
@@ -85,6 +86,7 @@ public class RendererActivity extends AppCompatActivity {
         findViewById(R.id.render_spot).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                n.stopRender(surfaceView.getHolder().getSurface());
                 if (n.isRendering() == 0) {
                     n.startRender(surfaceView.getHolder().getSurface(), "spot");
                     Toast.makeText(getApplicationContext(), "开始渲染 [牛牛]", Toast.LENGTH_LONG).show();
@@ -95,6 +97,7 @@ public class RendererActivity extends AppCompatActivity {
         findViewById(R.id.render_diablo3_pose).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                n.stopRender(surfaceView.getHolder().getSurface());
                 if (n.isRendering() == 0) {
                     n.startRender(surfaceView.getHolder().getSurface(), "diablo3_pose");
                     Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
