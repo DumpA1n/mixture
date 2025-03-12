@@ -4,12 +4,13 @@
 #include <algorithm>
 #include <cmath> // round floor
 
-Rasterizer::Rasterizer(int width, int height) {
+Rasterizer::Rasterizer(int width, int height, int channels) {
     this->width = width;
     this->height = height;
-    frame_buffer.resize(width * height);
+    this->channels = channels;
+    current_frame_buffer.resize(width * channels * height);
+    last_frame_buffer.resize(width * channels * height);
     depth_buffer.resize(width * height);
-    stb_frame_buffer.resize(width * height * 3);
 }
 
 int Rasterizer::get_index(int& x, int& y) {
@@ -20,37 +21,41 @@ void Rasterizer::set_pixel(const Vector2i& p, const Vector3f& col) {
     if (p.x < 0 || p.x >= width ||
         p.y < 0 || p.y >= height) return;
     // int index = (height - p.y) * width + p.x;
-    int index = p.y * width + p.x;
-    frame_buffer[index] = Vector3c{(uint8_t)(col.x * 255.0f), (uint8_t)(col.y * 255.0f), (uint8_t)(col.z * 255.0f)};
-    stb_frame_buffer[index * 3 + 0] = frame_buffer[index].x;
-    stb_frame_buffer[index * 3 + 1] = frame_buffer[index].y;
-    stb_frame_buffer[index * 3 + 2] = frame_buffer[index].z;
+    int index = (p.y * width + p.x) * channels;
+    current_frame_buffer[index + 0] = col.x * 255.0f;
+    current_frame_buffer[index + 1] = col.y * 255.0f;
+    current_frame_buffer[index + 2] = col.z * 255.0f;
+    if (channels == 4)
+        current_frame_buffer[index + 3] = 255;
 }
 void Rasterizer::set_pixel(int x, int y, const Vector3f& col) {
     if (x < 0 || x >= width ||
         y < 0 || y >= height) return;
     // int index = (height - p.y) * width + p.x;
-    int index = y * width + x;
-    frame_buffer[index] = Vector3c{(uint8_t)(col.x * 255.0f), (uint8_t)(col.y * 255.0f), (uint8_t)(col.z * 255.0f)};
-    stb_frame_buffer[index * 3 + 0] = frame_buffer[index].x;
-    stb_frame_buffer[index * 3 + 1] = frame_buffer[index].y;
-    stb_frame_buffer[index * 3 + 2] = frame_buffer[index].z;
+    int index = (y * width + x) * channels;
+    current_frame_buffer[index + 0] = col.x * 255.0f;
+    current_frame_buffer[index + 1] = col.y * 255.0f;
+    current_frame_buffer[index + 2] = col.z * 255.0f;
+    if (channels == 4)
+        current_frame_buffer[index + 3] = 255;
 }
 
-void Rasterizer::clear_buffer() {
+void Rasterizer::clear_buffer(const Vector3f& col) {
     for (int i = 0; i < width * height; i++) {
-        frame_buffer[i] = Vector3c{0, 0, 0};
+        int index = i * channels;
+        current_frame_buffer[index + 0] = col.x * 255.0f;
+        current_frame_buffer[index + 1] = col.y * 255.0f;
+        current_frame_buffer[index + 2] = col.z * 255.0f;
+        if (channels == 4)
+            current_frame_buffer[index + 3] = 255;
         depth_buffer[i] = 0xFFFF7F7F;
-        stb_frame_buffer[i * 3 + 0] = 0;
-        stb_frame_buffer[i * 3 + 1] = 0;
-        stb_frame_buffer[i * 3 + 2] = 0;
     }
 }
-std::vector<Vector3c> Rasterizer::get_frame_buffer() {
-    return frame_buffer;
+std::vector<uint8_t> Rasterizer::get_current_frame_buffer() {
+    return current_frame_buffer;
 }
-std::vector<uint8_t> Rasterizer::get_stb_frame_buffer() {
-    return stb_frame_buffer;
+std::vector<uint8_t> Rasterizer::get_last_frame_buffer() {
+    return last_frame_buffer;
 }
 
 void Rasterizer::set_vertex_shader(void* fn) {
@@ -126,7 +131,7 @@ void Rasterizer::draw_triangle_fill(const std::vector<Vector3f>& ps, const Vecto
 void Rasterizer::rasterize(Triangle* t, Vector3f* view_pos) {
     auto v = t->toVector4f();
 
-    //bbox
+    // bbox
     Vector3f bottomleft{std::min(std::min(v[0].x, v[1].x), v[2].x), std::min(std::min(v[0].y, v[1].y), v[2].y)};
     Vector3f topright{std::max(std::max(v[0].x, v[1].x), v[2].x), std::max(std::max(v[0].y, v[1].y), v[2].y)};
 
@@ -178,7 +183,7 @@ void Rasterizer::draw(std::vector<Triangle*> triangels) {
     };
 
     angleY = ((int)angleY + 10) % 360;
-    for (auto& t : triangels) {
+    for (const auto& t : triangels) {
         Triangle newTri = *t;
         Vector3f view_pos[3];
     

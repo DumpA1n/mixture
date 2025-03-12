@@ -8,10 +8,12 @@
 #include <iostream>
 #include <filesystem>
 #include <thread>
+#include <queue>
 
 #include "rasterizer.h"
 #include "model.h"
 #include "utils.h"
+#include "mlog.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,14 +22,16 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#define TAG "DUMPA1N"
+int WIDTH = 256;
+int HEIGHT = 256;
 
-int WIDTH = 700;
-int HEIGHT = 700;
+const static std::string FilesDir = "/data/data/com.example.mixture/files/";
 
-const std::string FilesDir = "/data/data/com.example.mixture/files/";
+std::atomic<bool> bIsRendering(false);
 
-std::atomic<bool> bIsRendering(false); // 控制渲染是否继续
+std::thread renderThread;
+
+std::mutex renderMutex;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_tinyrenderer_NativeLib_startRender(
@@ -36,14 +40,19 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
         jobject surface,
         jstring modelName) {
 
-    if (bIsRendering) return;
+    std::lock_guard<std::mutex> lock(renderMutex);
+
+    if (renderThread.joinable()) {
+        bIsRendering = false;
+        renderThread.join();
+    }
 
     bIsRendering = true;
 
     // 创建 ANativeWindow
     ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
     if (!window) {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "ANativeWindow_fromSurface failed");
+        LOGE("ANativeWindow_fromSurface failed");
         return;
     }
 
@@ -54,11 +63,11 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
     std::string modelname(chars);
     env->ReleaseStringUTFChars(modelName, chars);
 
-    __android_log_print(ANDROID_LOG_INFO, TAG, "model name: %s", modelname.c_str());
+    LOGI("model name: %s", modelname.c_str());
 
     // **启动渲染线程**
-    std::thread renderThread([window, modelname]() {
-        Rasterizer rst(WIDTH, HEIGHT);
+    renderThread = std::thread([window, modelname]() {
+        Rasterizer rst(WIDTH, HEIGHT, 4);
         Model obj;
 
         rst.set_vertex_shader((void*)&default_vertex_shader);
@@ -92,41 +101,36 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
         }
 
         while (bIsRendering) {
-            rst.clear_buffer();
+            rst.clear_buffer({0.0f, 0.0f, 0.0f});
 
             rst.draw(triangles);
 
             // 锁定缓冲区
             ANativeWindow_Buffer buffer;
             if (ANativeWindow_lock(window, &buffer, nullptr) != 0) {
-                __android_log_print(ANDROID_LOG_ERROR, TAG, "ANativeWindow_lock failed");
+                LOGE("ANativeWindow_lock failed");
                 ANativeWindow_release(window);
                 return;
             }
 
             uint8_t *dst = (uint8_t *) buffer.bits;
 
-            auto startTime = get_time();
-            for (int y = 0; y < HEIGHT; y++) {
-                for (int x = 0; x < WIDTH; x++) {
-                    int src_index = (y * WIDTH + x) * 3;  // RGB
-                    int dst_index = (y * buffer.stride + x) * 4;  // RGBA
+            LOGI("width: %d   stride: %d", WIDTH, buffer.stride);
 
-                    dst[dst_index + 0] = rst.stb_frame_buffer[src_index + 0]; // R
-                    dst[dst_index + 1] = rst.stb_frame_buffer[src_index + 1]; // G
-                    dst[dst_index + 2] = rst.stb_frame_buffer[src_index + 2]; // B
-                    dst[dst_index + 3] = 255; // Alpha
-                }
+            for (int y = 0; y < HEIGHT; y++) {
+                memcpy(dst + buffer.stride * y * rst.channels, &rst.current_frame_buffer[WIDTH * y * rst.channels], WIDTH * rst.channels);
             }
-            auto endTime = get_time();
-            __android_log_print(ANDROID_LOG_INFO, TAG, "耗时: %llx", endTime - startTime);
+
+            // LOGI("address: 0x%llX", buffer.bits);
+            // buffer.bits = rst.get_current_frame_buffer().data();
+            // LOGI("address: 0x%llX", buffer.bits);
 
             ANativeWindow_unlockAndPost(window);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(33)); // 30 FPS
         }
 
-        stbi_write_png((FilesDir + "out.png").c_str(), WIDTH, HEIGHT, 3, rst.get_stb_frame_buffer().data(), WIDTH * 3);
+        stbi_write_png((FilesDir + "out.png").c_str(), WIDTH, HEIGHT, rst.channels, rst.get_current_frame_buffer().data(), 0);
 
         ANativeWindow_release(window);
     });
@@ -136,7 +140,13 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_tinyrenderer_NativeLib_stopRender(JNIEnv* env, jobject /* this */, jobject surface) {
+    std::lock_guard<std::mutex> lock(renderMutex);
+
     bIsRendering = false;
+
+    if (renderThread.joinable()) {
+        renderThread.join();
+    }
 
     // 创建 ANativeWindow
     ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
@@ -144,6 +154,7 @@ Java_com_example_tinyrenderer_NativeLib_stopRender(JNIEnv* env, jobject /* this 
         __android_log_print(ANDROID_LOG_ERROR, TAG, "ANativeWindow_fromSurface failed");
         return;
     }
+
     // 设置缓冲区参数
     ANativeWindow_setBuffersGeometry(window, WIDTH, HEIGHT, WINDOW_FORMAT_RGBA_8888);
 
@@ -155,7 +166,7 @@ Java_com_example_tinyrenderer_NativeLib_stopRender(JNIEnv* env, jobject /* this 
         return;
     }
 
-    uint8_t *dst = (uint8_t *) buffer.bits;
+    uint8_t* dst = (uint8_t*)buffer.bits;
 
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {

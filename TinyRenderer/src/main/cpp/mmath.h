@@ -5,6 +5,8 @@
 #include <array>
 #include <stdexcept>
 
+#include "mlog.h"
+
 struct Vector2i {
     int x, y;
     Vector2i() : x(0), y(0) {}

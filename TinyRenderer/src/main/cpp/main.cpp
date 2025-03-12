@@ -26,7 +26,7 @@
 // };
 //
 // int main() {
-//     Rasterizer rst(WIDTH, HEIGHT);
+//     Rasterizer rst(WIDTH, HEIGHT, 4);
 //
 //     rst.set_vertex_shader((void*)&default_vertex_shader);
 //     rst.set_fragment_shader((void*)&african_head_fragment_shader);
@@ -55,7 +55,7 @@
 //     }
 //
 //     while (1) {
-//         rst.clear_buffer();
+//         rst.clear_buffer(Vector3f(0.0f, 0.0f, 0.0f));
 //
 //         rst.draw(triangles);
 //
@@ -86,7 +86,7 @@
 //         // rst.draw_line(zero.xy(), l1.xy(), {0.5f, 0.5f, 0.5f});
 //         // rst.draw_line(zero.xy(), l2.xy(), {1, 1, 1});
 //
-//         stbi_write_png("out.png", WIDTH, HEIGHT, 3, rst.get_stb_frame_buffer().data(), WIDTH * 3);
+//         stbi_write_png("out.png", WIDTH, HEIGHT, 4, rst.get_current_frame_buffer().data(), 0);
 //         break;
 //     }
 //     return 0;

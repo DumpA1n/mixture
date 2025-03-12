@@ -12,19 +12,21 @@ class Rasterizer {
 public:
     int width;
     int height;
+    int channels;
 
-    std::vector<Vector3c> frame_buffer;
-    std::vector<uint8_t> stb_frame_buffer;
+    std::vector<uint8_t> current_frame_buffer;
+    std::vector<uint8_t> last_frame_buffer;
     std::vector<float> depth_buffer;
-    Rasterizer(int width, int height);
+
+    Rasterizer(int width, int height, int stride);
 
     int get_index(int& x, int& y);
     void set_pixel(const Vector2i& p, const Vector3f& col);
     void set_pixel(int x, int y, const Vector3f& col);
 
-    void clear_buffer();
-    std::vector<Vector3c> get_frame_buffer();
-    std::vector<uint8_t> get_stb_frame_buffer();
+    void clear_buffer(const Vector3f& col);
+    std::vector<uint8_t> get_current_frame_buffer();
+    std::vector<uint8_t> get_last_frame_buffer();
 
     Vector4f (*vertex_shader)(const vertex_shader_payload& payload);
     Vector3f (*fragment_shader)(const fragment_shader_payload& payload);

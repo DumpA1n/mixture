@@ -1,7 +1,6 @@
 package com.example.tinyrenderer;
 
 import android.view.Surface;
-import android.view.SurfaceView;
 
 public class NativeLib {
 
