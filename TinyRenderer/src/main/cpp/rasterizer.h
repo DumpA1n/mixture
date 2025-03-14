@@ -26,10 +26,9 @@ public:
 
     Rasterizer(int width, int height, int stride);
 
-    int get_index(int& x, int& y);
-    void set_pixel(const Vector2i& p, const Vector3f& col);
-    void set_pixel(int x, int y, const Vector3f& col);
-
+    inline int get_index(const int& x, const int& y);
+    inline void set_pixel(const Vector2i& p, const Vector3f& col);
+    inline void set_pixel(int x, int y, const Vector3f& col);
     void clear_buffer(const Vector3f& col);
     std::vector<uint8_t> get_current_frame_buffer();
     std::vector<uint8_t> get_last_frame_buffer();
@@ -43,6 +42,9 @@ public:
     void set_texture(Texture* tex);
     std::unordered_map<std::string, Texture*> textureMap;
     void add_texture(std::string name, Texture* texture);
+
+    inline bool isInsideTriangle2D(const Vector3f& p, Triangle* t);
+    inline bool isInsideTriangle2D(float x, float y, Triangle* t);
 
     void draw_line(const Vector2f& p1, const Vector2f& p2, const Vector3f& col);
     void draw_triangle(Triangle* t, const Vector3f& col);

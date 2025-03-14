@@ -22,8 +22,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-int WIDTH = 768;
-int HEIGHT = 768;
+int WIDTH = 700;
+int HEIGHT = 700;
 
 const static std::string FilesDir = "/data/data/com.example.mixture/files/";
 
@@ -90,12 +90,12 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
         }
 
         std::vector<Triangle*> triangles;
-        for (int i = 0; i < obj.v_indices.size(); i += 3) {
+        for (int i = 0; i < obj.size(); i += 3) {
             Triangle* tri = new Triangle();
             for (int j = 0; j < 3; j++) {
-                tri->setVertices(j, obj.vertices[obj.v_indices[i + j]]);
-                tri->setTexCoords(j, obj.tex_coords[obj.vt_indices[i + j]]);
-                tri->setNormals(j, obj.normals[obj.vn_indices[i + j]]);
+                tri->setVertices(j, obj.getVertices(i + j));
+                tri->setTexCoords(j, obj.getTexCoords(i + j));
+                tri->setNormals(j, obj.getNormals(i + j));
             }
             triangles.push_back(tri);
         }
@@ -107,11 +107,11 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
 
             Vector3f tmp;
             Vector4f zero  = Vector4f{Vector3f{0, 0, 0}, 1};
-            Vector4f xAxis = Vector4f{Vector3f{1, 0, 0}.normalized(), 1};
-            Vector4f yAxis = Vector4f{Vector3f{0, 1, 0}.normalized(), 1};
-            Vector4f zAxis = Vector4f{Vector3f{0, 0, 1}.normalized(), 1};
-            Vector4f l1    = Vector4f{Vector3f{20, 20, 20}.normalized(), 1};
-            Vector4f l2    = Vector4f{Vector3f{-20, 20, 0}.normalized(), 1};
+            Vector4f xAxis = Vector4f{normalized(Vector3f{1, 0, 0}), 1};
+            Vector4f yAxis = Vector4f{normalized(Vector3f{0, 1, 0}), 1};
+            Vector4f zAxis = Vector4f{normalized(Vector3f{0, 0, 1}), 1};
+            Vector4f l1    = Vector4f{normalized(Vector3f{20, 20, 20}), 1};
+            Vector4f l2    = Vector4f{normalized(Vector3f{-20, 20, 0}), 1};
             for (auto& it : {std::ref(zero), std::ref(xAxis), std::ref(yAxis), std::ref(zAxis), std::ref(l1), std::ref(l2)}) {
                 rst.vertex_shader({it, tmp, tmp});
                 rst.ViewPort(it, WIDTH, HEIGHT);
