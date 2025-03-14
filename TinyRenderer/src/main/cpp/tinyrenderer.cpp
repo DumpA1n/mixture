@@ -22,8 +22,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-int WIDTH = 256;
-int HEIGHT = 256;
+int WIDTH = 768;
+int HEIGHT = 768;
 
 const static std::string FilesDir = "/data/data/com.example.mixture/files/";
 
@@ -103,7 +103,26 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
         while (bIsRendering) {
             rst.clear_buffer({0.0f, 0.0f, 0.0f});
 
-            rst.draw(triangles);
+            rst.draw(triangles, RASTERIZE_MODE);
+
+            Vector3f tmp;
+            Vector4f zero  = Vector4f{Vector3f{0, 0, 0}, 1};
+            Vector4f xAxis = Vector4f{Vector3f{1, 0, 0}.normalized(), 1};
+            Vector4f yAxis = Vector4f{Vector3f{0, 1, 0}.normalized(), 1};
+            Vector4f zAxis = Vector4f{Vector3f{0, 0, 1}.normalized(), 1};
+            Vector4f l1    = Vector4f{Vector3f{20, 20, 20}.normalized(), 1};
+            Vector4f l2    = Vector4f{Vector3f{-20, 20, 0}.normalized(), 1};
+            for (auto& it : {std::ref(zero), std::ref(xAxis), std::ref(yAxis), std::ref(zAxis), std::ref(l1), std::ref(l2)}) {
+                rst.vertex_shader({it, tmp, tmp});
+                rst.ViewPort(it, WIDTH, HEIGHT);
+            }
+
+            rst.draw_line(zero.xy(), xAxis.xy(), {1, 0, 0});
+            rst.draw_line(zero.xy(), yAxis.xy(), {0, 1, 0});
+            rst.draw_line(zero.xy(), zAxis.xy(), {0, 0, 1});
+
+            rst.draw_line(zero.xy(), l1.xy(), {0.5f, 0.5f, 0.5f});
+            rst.draw_line(zero.xy(), l2.xy(), {1, 1, 1});
 
             // 锁定缓冲区
             ANativeWindow_Buffer buffer;

@@ -31,7 +31,6 @@ struct Vector3f {
     Vector3f operator+(const Vector3f& o) const { return Vector3f{x + o.x, y + o.y, z + o.z}; }
     Vector3f operator-(const Vector3f& o) const { return Vector3f{x - o.x, y - o.y, z - o.z}; }
     Vector3f operator*(float value) const { return Vector3f{x * value, y * value, z * value}; }
-    // Vector3f operator*(float value, const Vector3f& v) { return Vector3f{v.x * value, v.y * value, v.z * value}; }
     Vector3f operator/(float value) const { return {x / value, y / value, z / value}; }
     Vector3f& operator+=(const Vector3f& o) { x += o.x; y += o.y; z += o.z; return *this; }
     inline float norm() const { return std::sqrt(x*x + y*y + z*z); }

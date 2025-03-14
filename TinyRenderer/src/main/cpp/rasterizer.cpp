@@ -48,7 +48,7 @@ void Rasterizer::clear_buffer(const Vector3f& col) {
         current_frame_buffer[index + 2] = col.z * 255.0f;
         if (channels == 4)
             current_frame_buffer[index + 3] = 255;
-        depth_buffer[i] = 0xFFFF7F7F;
+        depth_buffer[i] = FLT_MAX;
     }
 }
 std::vector<uint8_t> Rasterizer::get_current_frame_buffer() {
@@ -105,24 +105,27 @@ void Rasterizer::draw_line(const Vector2f& p1, const Vector2f& p2, const Vector3
         if (e2 < dx)  { err += dx; y1 += sy; }
     }
 }
-void Rasterizer::draw_triangle(const std::vector<Vector2f>& ps, const Vector3f& col) {
-    draw_line(ps[0], ps[1], col);
-    draw_line(ps[1], ps[2], col);
-    draw_line(ps[2], ps[0], col);
+void Rasterizer::draw_triangle(Triangle* t, const Vector3f& col) {
+    Vector2f p0 = t->vertices[0].xy();
+    Vector2f p1 = t->vertices[1].xy();
+    Vector2f p2 = t->vertices[2].xy();
+    draw_line(p0, p1, col);
+    draw_line(p1, p2, col);
+    draw_line(p2, p0, col);
 }
-bool inside_triangle(const Vector3f& p, const Vector3f* tri) {
-    float n1 = (tri[1] - tri[0]).cross(p - tri[0]).z;
-    float n2 = (tri[2] - tri[1]).cross(p - tri[1]).z;
-    float n3 = (tri[0] - tri[2]).cross(p - tri[2]).z;
+bool inside_triangle(const Vector3f& p, const Vector3f* t) {
+    float n1 = (t[1] - t[0]).cross(p - t[0]).z;
+    float n2 = (t[2] - t[1]).cross(p - t[1]).z;
+    float n3 = (t[0] - t[2]).cross(p - t[2]).z;
     return (n1 > 0 && n2 > 0 && n3 > 0) || (n1 < 0 && n2 < 0 && n3 < 0);
 }
-void Rasterizer::draw_triangle_fill(const std::vector<Vector3f>& ps, const Vector3f& col) {
-    Vector3f bottomleft{std::min(std::min(ps[0].x, ps[1].x), ps[2].x), std::min(std::min(ps[0].y, ps[1].y), ps[2].y)};
-    Vector3f topright{std::max(std::max(ps[0].x, ps[1].x), ps[2].x), std::max(std::max(ps[0].y, ps[1].y), ps[2].y)};
-
+void Rasterizer::draw_triangle_filled(Triangle* t, const Vector3f& col) {
+    auto v = t->toVector4f();
+    Vector3f bottomleft{std::min(std::min(v[0].x, v[1].x), v[2].x), std::min(std::min(v[0].y, v[1].y), v[2].y)};
+    Vector3f topright{std::max(std::max(v[0].x, v[1].x), v[2].x), std::max(std::max(v[0].y, v[1].y), v[2].y)};
     for (int x = std::floor(bottomleft.x); x <= std::ceil(topright.x); x++) {
         for (int y = std::floor(bottomleft.y); y <= std::ceil(topright.y); y++) {
-            if (inside_triangle({x, y}, ps.data())) {
+            if (inside_triangle({x, y}, t->toVector3f().data())) {
                 set_pixel(x, y, col);
             }
         }
@@ -138,6 +141,8 @@ void Rasterizer::rasterize(Triangle* t, Vector3f* view_pos) {
     for (int x = std::floor(bottomleft.x); x <= std::ceil(topright.x); x++) {
         for (int y = std::floor(bottomleft.y); y <= std::ceil(topright.y); y++) {
             if (x < 0 || x >= width || y < 0 || y >= height) { continue; }
+
+            bool bMSAA = true;
 
             if (inside_triangle({x, y}, t->toVector3f().data())) {
 
@@ -172,18 +177,17 @@ void Rasterizer::rasterize(Triangle* t, Vector3f* view_pos) {
         }
     }
 }
+void Rasterizer::ViewPort(Vector4f& p, int w, int h) {
+    float f1 = (50 - 0.1) / 2.0;
+    float f2 = (50 + 0.1) / 2.0;
+    p.x = w*0.5f*(p.x+1.0f);
+    p.y = h*(1.0f - 0.5f*(p.y+1.0f));
+    p.z = p.z * f1 + f2;
+};
 
-void Rasterizer::draw(std::vector<Triangle*> triangels) {
-    static auto ViewPort = [](Vector4f& p, int w, int h) -> void {
-        float f1 = (50 - 0.1) / 2.0;
-        float f2 = (50 + 0.1) / 2.0;
-        p.x = w*0.5f*(p.x+1.0f);
-        p.y = h*(1.0f - 0.5f*(p.y+1.0f));
-        p.z = p.z * f1 + f2;
-    };
-
+void Rasterizer::draw(std::vector<Triangle*> triangles, enum DRAW_MODE mode) {
     angleY = ((int)angleY + 10) % 360;
-    for (const auto& t : triangels) {
+    for (const auto& t : triangles) {
         Triangle newTri = *t;
         Vector3f view_pos[3];
     
@@ -193,6 +197,11 @@ void Rasterizer::draw(std::vector<Triangle*> triangels) {
         for (int i = 0; i < 3; i++)
             ViewPort(newTri.vertices[i], width, height);
 
-        rasterize(&newTri, view_pos);
+        if (mode == RASTERIZE_MODE)
+            rasterize(&newTri, view_pos);
+        else if (mode == LINE_FRAME_MODE)
+            draw_triangle(&newTri, Vector3f{1.0f});
+        else if (mode == PURE_COLOR_MODE)
+            draw_triangle_filled(&newTri, Vector3f{1.0f});
     }
 }

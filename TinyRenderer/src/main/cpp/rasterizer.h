@@ -8,6 +8,12 @@
 #include <string>
 #include <unordered_map>
 
+enum DRAW_MODE {
+    RASTERIZE_MODE = 1,
+    LINE_FRAME_MODE = 2,
+    PURE_COLOR_MODE = 3
+};
+
 class Rasterizer {
 public:
     int width;
@@ -39,9 +45,10 @@ public:
     void add_texture(std::string name, Texture* texture);
 
     void draw_line(const Vector2f& p1, const Vector2f& p2, const Vector3f& col);
-    void draw_triangle(const std::vector<Vector2f>& ps, const Vector3f& col);
-    void draw_triangle_fill(const std::vector<Vector3f>& ps, const Vector3f& col);
+    void draw_triangle(Triangle* t, const Vector3f& col);
+    void draw_triangle_filled(Triangle* t, const Vector3f& col);
     void rasterize(Triangle* t, Vector3f* view_pos);
+    void ViewPort(Vector4f& p, int w, int h);
 
-    void draw(std::vector<Triangle*> triangels);
+    void draw(std::vector<Triangle*> triangles, enum DRAW_MODE mode);
 };
