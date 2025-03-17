@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <cstdint>
 #include <cmath>
 #include <cstring>
@@ -8,12 +9,29 @@
 #include <cassert>
 #include <limits>
 
+#if defined(_MSC_VER)
+    #define FORCEINLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+    #define FORCEINLINE __attribute__((always_inline)) inline
+#else
+    #define FORCEINLINE inline
+#endif
+
+#define SIMDON 0
+
+#if defined (__aarch64__)
+    #include <arm_neon.h>
+#elif defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+    #include <immintrin.h>
+#endif
+
 template<int n, typename T>
 struct vec {
     T data[n];
-    T  operator[](int i) const { assert(i >= 0 && i < n); return data[i]; }
-    T& operator[](int i)       { assert(i >= 0 && i < n); return data[i]; }
+    inline T  operator[](int i) const { assert(i >= 0 && i < n); return data[i]; }
+    inline T& operator[](int i)       { assert(i >= 0 && i < n); return data[i]; }
 };
+
 template<int n, typename T>
 vec<n, T> operator+(const vec<n, T>& lv, const vec<n, T>& rv) {
     auto ret = lv;
@@ -60,20 +78,20 @@ vec<n, T> operator/(const vec<n, T>& lv, const T& va) {
 }
 
 template<int n, typename T>
-inline T norm(const vec<n, T>& v) {
+FORCEINLINE T norm(const vec<n, T>& v) {
     return std::sqrt(v*v);
 }
 template<int n, typename T>
-inline T squaredNorm(const vec<n, T>& v) {
+FORCEINLINE T squaredNorm(const vec<n, T>& v) {
     return v*v;
 }
 template<int n, typename T>
-inline vec<n, T> normalized(const vec<n, T>& v) {
+FORCEINLINE vec<n, T> normalized(const vec<n, T>& v) {
     T nm = norm(v);
     return (nm > std::numeric_limits<T>::epsilon()) ? (v / nm) : v;
 }
 template<int n, typename T>
-inline vec<n, T> cwiseProduct(const vec<n, T>& lv, const vec<n, T>& rv) {
+FORCEINLINE vec<n, T> cwiseProduct(const vec<n, T>& lv, const vec<n, T>& rv) {
     auto ret = lv;
     for (int i = 0; i < n; i++) { ret[i] *= rv[i]; }
     return ret;
@@ -85,8 +103,10 @@ struct vec<2, T> {
     vec() = default;
     vec(T va) : x(va), y(va) {}
     vec(T x, T y) : x(x), y(y) {}
-    T  operator[](int i) const { assert(i >= 0 && i < 2); return reinterpret_cast<const T*>(this)[i]; }
-    T& operator[](int i)       { assert(i >= 0 && i < 2); return reinterpret_cast<      T*>(this)[i]; }
+    inline T  operator[](int i) const { assert(i >= 0 && i < 2); return reinterpret_cast<const T*>(this)[i]; }
+    inline T& operator[](int i)       { assert(i >= 0 && i < 2); return reinterpret_cast<      T*>(this)[i]; }
+    inline const void* data() const { return reinterpret_cast<const void*>(this); }
+    inline       void* data()       { return reinterpret_cast<      void*>(this); }
 };
 
 template<typename T>
@@ -96,9 +116,24 @@ struct vec<3, T> {
     vec(T va) : x(va), y(va), z(va) {}
     vec(T x, T y, T z) : x(x), y(y), z(z) {}
     vec(const vec<2, T>& v2, T z) : x(v2.x), y(v2.y), z(z) {}
-    T  operator[](int i) const { assert(i >= 0 && i < 3); return reinterpret_cast<const T*>(this)[i]; }
-    T& operator[](int i)       { assert(i >= 0 && i < 3); return reinterpret_cast<      T*>(this)[i]; }
-    vec<2, T> xy() { return {x, y}; }
+    inline T  operator[](int i) const { assert(i >= 0 && i < 3); return reinterpret_cast<const T*>(this)[i]; }
+    inline T& operator[](int i)       { assert(i >= 0 && i < 3); return reinterpret_cast<      T*>(this)[i]; }
+    inline vec<2, T> xy() { return {x, y}; }
+    inline const void* data() const { return reinterpret_cast<const void*>(this); }
+    inline       void* data()       { return reinterpret_cast<      void*>(this); }
+#if defined (__aarch64__)
+    template<typename U = T, typename std::enable_if<std::is_same<U, float>::value, int>::type = 0>
+    inline float32x4_t load() const {
+        alignas(16) float _data[4] = {x, y, z, 0.0f};
+        return vld1q_f32(_data);
+    }
+    template<typename U = T, typename std::enable_if<std::is_same<U, float>::value, int>::type = 0>
+    inline void store(const float32x4_t& _v) {
+        alignas(16) float _data[4];
+        vst1q_f32(_data, _v);
+        x = _data[0], y = _data[1], z = _data[2];
+    }
+#endif
 };
 
 template<typename T>
@@ -108,10 +143,25 @@ struct vec<4, T> {
     vec(T va) : x(va), y(va), z(va), w(va) {}
     vec(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
     vec(const vec<3, T>& v3, T w) : x(v3.x), y(v3.y), z(v3.z), w(w) {}
-    T  operator[](int i) const { assert(i >= 0 && i < 4); return reinterpret_cast<const T*>(this)[i]; }
-    T& operator[](int i)       { assert(i >= 0 && i < 4); return reinterpret_cast<      T*>(this)[i]; }
-    vec<2, T> xy() { return {x, y}; }
-    vec<3, T> xyz() { return {x, y, z}; }
+    inline T  operator[](int i) const { assert(i >= 0 && i < 4); return reinterpret_cast<const T*>(this)[i]; }
+    inline T& operator[](int i)       { assert(i >= 0 && i < 4); return reinterpret_cast<      T*>(this)[i]; }
+    inline vec<2, T> xy() { return {x, y}; }
+    inline vec<3, T> xyz() { return {x, y, z}; }
+    inline const void* data() const { return reinterpret_cast<const void*>(this); }
+    inline       void* data()       { return reinterpret_cast<      void*>(this); }
+#if defined (__aarch64__)
+    template<typename U = T, typename std::enable_if<std::is_same<U, float>::value, int>::type = 0>
+    inline float32x4_t load() const {
+        alignas(16) float _data[4] = {x, y, z, w};
+        return vld1q_f32(_data);
+    }
+    template<typename U = T, typename std::enable_if<std::is_same<U, float>::value, int>::type = 0>
+    inline void store(const float32x4_t& _v) {
+        alignas(16) float _data[4];
+        vst1q_f32(_data, _v);
+        x = _data[0], y = _data[1], z = _data[2], w = _data[3];
+    }
+#endif
 };
 
 using vec2i = vec<2, int>;
@@ -120,15 +170,67 @@ using vec3f = vec<3, float>;
 using vec4f = vec<4, float>;
 using vec3c = vec<3, uint8_t>;
 
-// inline vec3f cross(const vec3f& lv, const vec3f& rv) { return {lv.y*rv.z - lv.z*rv.y, lv.z*rv.x - lv.x*rv.z, lv.x*rv.y - lv.y*rv.x}; }
-
 using Vector2i = vec<2, int>;
 using Vector2f = vec<2, float>;
 using Vector3f = vec<3, float>;
 using Vector4f = vec<4, float>;
 using Vector3c = vec<3, uint8_t>;
 
-inline Vector3f cross(const Vector3f& lv, const Vector3f& rv) { return {lv.y*rv.z - lv.z*rv.y, lv.z*rv.x - lv.x*rv.z, lv.x*rv.y - lv.y*rv.x}; }
+#if SIMDON && defined (__aarch64__)
+    extern "C" void cross_neon(Vector3f* result, const Vector3f* v1, const Vector3f* v2);
+#endif
+
+inline Vector3f cross(const Vector3f& v1, const Vector3f& v2) {
+#if SIMDON && defined (__aarch64__)
+    Vector3f result;
+    cross_neon(&result, &v1, &v2);
+    return result;
+#elif SIMDON && defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+    __m128 a = _mm_set_ps(0, v1.z, v1.y, v1.x);
+    __m128 b = _mm_set_ps(0, v2.z, v2.y, v2.x);
+
+    __m128 a_yzx = _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 b_zxy = _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 1, 0, 2));
+    __m128 a_zxy = _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 1, 0, 2));
+    __m128 b_yzx = _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 0, 2, 1));
+
+    __m128 result = _mm_sub_ps(_mm_mul_ps(a_yzx, b_zxy), _mm_mul_ps(a_zxy, b_yzx));
+
+    alignas(16) float resultArray[4];
+    _mm_store_ps(resultArray, result);
+    return {resultArray[0], resultArray[1], resultArray[2]};
+#else
+    return { v1.y*v2.z - v1.z*v2.y, 
+             v1.z*v2.x - v1.x*v2.z, 
+             v1.x*v2.y - v1.y*v2.x };
+#endif
+}
+
+
+template<int n, int m, typename T>
+struct mat {
+    int ind = 0;
+    std::array<std::array<T, m>, n> _M;
+};
+
+template<int n, int m, typename T>
+void operator<<(mat<n, m, T>& _im, float _va) {
+    _im._M[_im.ind][_im.ind++] = _va;
+}
+
+template<int n, int m, typename T>
+mat<n, m, T> operator*(const mat<n, m, T>& m1, const mat<n, m, T>& m2) {
+    
+}
+
+using mat4f = mat<4, 4, float>;
+inline void mfun() {
+    mat4f m1;
+    m1 << 1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1;
+}
 
 struct Matrix3f {
     std::array<std::array<float, 3>, 3> m;
@@ -210,6 +312,14 @@ struct Matrix4f {
             }
         }
         return result;
+// #define __aarch64__
+#if SIMDON && defined (__aarch64__)
+        
+#elif SIMDON && defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+
+#else
+
+#endif
     }
     Vector3f operator*(const Vector3f& v) const {
         float x_new = m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z;

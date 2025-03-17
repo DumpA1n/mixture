@@ -101,6 +101,8 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
         }
 
         while (bIsRendering) {
+            auto start = std::chrono::high_resolution_clock::now();
+
             rst.clear_buffer({0.0f, 0.0f, 0.0f});
 
             rst.draw(triangles, RASTERIZE_MODE);
@@ -134,17 +136,17 @@ Java_com_example_tinyrenderer_NativeLib_startRender(
 
             uint8_t *dst = (uint8_t *) buffer.bits;
 
-            LOGI("width: %d   stride: %d", WIDTH, buffer.stride);
+            // LOGI("width: %d   stride: %d", WIDTH, buffer.stride);
 
             for (int y = 0; y < HEIGHT; y++) {
                 memcpy(dst + buffer.stride * y * rst.channels, &rst.current_frame_buffer[WIDTH * y * rst.channels], WIDTH * rst.channels);
             }
 
-            // LOGI("address: 0x%llX", buffer.bits);
-            // buffer.bits = rst.get_current_frame_buffer().data();
-            // LOGI("address: 0x%llX", buffer.bits);
-
             ANativeWindow_unlockAndPost(window);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double, std::milli> elapsed = end - start; // 毫秒
+            LOGI("渲染耗时: %f 毫秒", elapsed.count());
 
             std::this_thread::sleep_for(std::chrono::milliseconds(33)); // 30 FPS
         }

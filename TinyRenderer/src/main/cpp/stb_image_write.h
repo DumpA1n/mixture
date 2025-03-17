@@ -91,7 +91,7 @@ USAGE:
 
    PNG supports writing rectangles of data even when the bytes storing rows of
    data are not consecutive in memory (e.g. sub-rectangles of a larger image),
-   by supplying the channels between the beginning of adjacent rows. The other
+   by supplying the stride between the beginning of adjacent rows. The other
    formats do not. (Thus you cannot write a native-format BMP through the BMP
    writer, both because it is in BGR order and because it may have padding
    at the end of the line.)
