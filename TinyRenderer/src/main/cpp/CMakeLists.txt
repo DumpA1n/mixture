@@ -94,12 +94,14 @@ else (ANDROIDSTUDIO)
 
     enable_language(ASM)
 
-    add_compile_options(
-            -O3                           # 启用最高级别优化
-            -march=armv8-a+simd           # 启用 NEON 指令集
-            -finline-functions            # 启用函数内联
-            -mllvm -inline-threshold=1000 # 提高 Clang 内联可能性
-    )
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+        add_compile_options(
+                -O3                           # 启用最高级别优化
+                -march=armv8-a+simd           # 启用 NEON 指令集
+                -finline-functions            # 启用函数内联
+                -mllvm -inline-threshold=1000 # 提高 Clang 内联可能性
+        )
+    endif ()
 
     set(SOURCES
             ${CMAKE_SOURCE_DIR}/tinyrenderer.cpp
