@@ -12,6 +12,8 @@ public class NativeLib {
     public native void startRender(Surface surface, String modelName);
     public native void stopRender(Surface surface);
     public native int isRendering();
+    public native void setRenderMode(int RenderMode);
+    public native void setAAMode(boolean bMSAA4x, boolean bSSAA4x, boolean bFXAA, boolean bTAA);
 
     static {
         // Used to load the 'tinyrenderer' library on application startup.

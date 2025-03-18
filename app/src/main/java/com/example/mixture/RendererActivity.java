@@ -1,16 +1,13 @@
 package com.example.mixture;
 
-import android.content.Context;
-import android.content.res.AssetManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -21,17 +18,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.tinyrenderer.NativeLib;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Objects;
-
-import javax.security.auth.login.LoginException;
 
 public class RendererActivity extends AppCompatActivity {
     private static String TAG = "DUMPA1N";
@@ -101,6 +87,42 @@ public class RendererActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
                 }
             }
+        });
+
+        Spinner spinner_AAMode = findViewById(R.id.spinner_AAMode);
+        String[] options_AAMode = {"默认", "4xMSAA", "4xSSAA", "FXAA", "TAA"};
+        ArrayAdapter<String> adapter_AAMode = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options_AAMode);
+        adapter_AAMode.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner_AAMode.setAdapter(adapter_AAMode);
+        spinner_AAMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                if (pos == 0) { n.setAAMode(false, false, false, false); }
+                if (pos == 1) { n.setAAMode(true, false, false, false); }
+                if (pos == 2) { n.setAAMode(false, true, false, false); }
+                if (pos == 3) { n.setAAMode(false, false, true, false); }
+                if (pos == 4) { n.setAAMode(false, false, false, true); }
+                Toast.makeText(getApplicationContext(), "选择了: " + options_AAMode[pos], Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        Spinner spinner_RenderMode = findViewById(R.id.spinner_RenderMode);
+        String[] options_RenderMode = {"纹理模式", "线框模式", "纯色模式"};
+        ArrayAdapter<String> adapter_RenderMode = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options_RenderMode);
+        adapter_RenderMode.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner_RenderMode.setAdapter(adapter_RenderMode);
+        spinner_RenderMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                n.setRenderMode(pos + 1);
+                Toast.makeText(getApplicationContext(), "选择了: " + options_RenderMode[pos], Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 }
