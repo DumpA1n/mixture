@@ -6,7 +6,6 @@ import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -16,6 +15,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,18 +25,6 @@ import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
     private static String TAG = "DUMPA1N";
-
-    private final ActivityResultLauncher<Intent> imagePickerLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Uri imageUri = result.getData().getData(); // 获取图片URI
-                    if (imageUri != null){
-                        Intent intent = new Intent(MainActivity.this, PictureEditActivity.class);
-                        intent.putExtra("imageUri", imageUri.toString());
-                        startActivity(intent);
-                    }
-                }
-            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,24 +37,31 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        if (savedInstanceState == null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new HomeFragment())
+                    .commit();
+        }
+
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_home) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new HomeFragment())
+                        .commit();
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new MineFragment())
+                        .commit();
+                return true;
+            }
+            return false;
+        });
+
         copyAssets(this, "models", getFilesDir().getAbsolutePath() + "/models");
-
-        findViewById(R.id.renderer).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, RendererActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        findViewById(R.id.pictureEdit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType("image/*");
-                imagePickerLauncher.launch(intent);
-            }
-        });
     }
 
     public static void copyAssets(Context context, String assetPath, String targetPath) {
