@@ -4,12 +4,13 @@
     android:layout_height="wrap_content"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:paddingHorizontal="24dp"
+    android:paddingBottom="16dp">
 
     <ImageView
         android:id="@+id/item_image"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:scaleType="centerCrop"
         android:src="@drawable/radio_button_unchecked_24px" />
 
@@ -17,7 +18,7 @@
         android:id="@+id/item_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:text="文字"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp"/>
+        android:textSize="14sp" />
 </LinearLayout>

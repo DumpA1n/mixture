@@ -1,13 +1,38 @@
 package com.example.mixture;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Matrix;
+import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.text.InputType;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -16,19 +41,28 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mixture.EditorItemUI.ItemAdapter;
 import com.example.mixture.EditorItemUI.ItemModel;
+import com.example.mixture.Utils.ImageViewUtils;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.atomic.AtomicReference;
 
+import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
 import ja.burhanrashid52.photoeditor.PhotoEditorView;
 import ja.burhanrashid52.photoeditor.PhotoEditor;
+import ja.burhanrashid52.photoeditor.SaveSettings;
+import ja.burhanrashid52.photoeditor.ViewType;
 
 public class PictureEditActivity extends AppCompatActivity {
-
+    private PhotoEditorView photoEditorView;
+    private PhotoEditor photoEditor;
     private ImageView imageView;
+    private RecyclerView recyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,70 +75,55 @@ public class PictureEditActivity extends AppCompatActivity {
             return insets;
         });
 
-        // PhotoEditorView photoEditorView = findViewById(R.id.photoEditorView);
-        //
-        // // 初始化 PhotoEditor
-        // PhotoEditor photoEditor = new PhotoEditor.Builder(this, photoEditorView)
-        //         .setPinchTextScalable(true) // 支持文字缩放
-        //         .build();
+        photoEditorView = findViewById(R.id.photoEditorView);
+        photoEditor = new PhotoEditor.Builder(this, photoEditorView)
+                .setPinchTextScalable(true) // 允许文字缩放
+                .setDefaultTextTypeface(Typeface.DEFAULT_BOLD) // 设置默认字体
+                .setDefaultEmojiTypeface(Typeface.DEFAULT) // 设置表情字体
+                .build();
+
+        loadImageFromIntent();
+
+        imageView = photoEditorView.getSource();
 
 
-        imageView = findViewById(R.id.imageView);
 
-        Intent intent = getIntent();
-        if (intent != null){
-            String imageUriExtra = intent.getStringExtra("imageUri");
-            if (imageUriExtra != null) {
-                Uri imageUri = Uri.parse(imageUriExtra);
-                imageView.setImageURI(imageUri);
-            }
-        }
-
-        AtomicReference<Float> currentRotation = new AtomicReference<>(0f);
-        AtomicReference<Float> currentScale = new AtomicReference<>(1f);
-
-        imageView.setScaleType(ImageView.ScaleType.MATRIX); // 可选：便于自由缩放
-
-        RecyclerView recyclerView = findViewById(R.id.recyclerView_item);
+        recyclerView = findViewById(R.id.recyclerView_item);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
         List<ItemModel> itemList = new ArrayList<>();
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "旋转", "rotate"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "放大", "scale_up"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "缩小", "scale_down"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "裁剪", "crop"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
-        itemList.add(new ItemModel(R.drawable.radio_button_unchecked_24px, "选项", "none"));
+        itemList.add(new ItemModel(R.drawable.crop_24px, "裁剪", "crop"));
+        itemList.add(new ItemModel(R.drawable.rotate_90_degrees_cw_24px, "旋转", "rotate"));
+        itemList.add(new ItemModel(R.drawable.text_fields_24px, "文字", "text"));
+        itemList.add(new ItemModel(R.drawable.draw_24px, "画笔", "brush"));
+        itemList.add(new ItemModel(R.drawable.add_reaction_24px, "表情", "emoji"));
+        itemList.add(new ItemModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
+        itemList.add(new ItemModel(R.drawable.filter_vintage_24px, "滤镜", "filter"));
 
         ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
             switch (item.actionType) {
                 case "rotate":
-                    currentRotation.updateAndGet(v -> new Float((float) (v + 90)));
-                    imageView.setRotation(currentRotation.get());
+                    rotateImage();
                     break;
-                case "scale_up":
-                    currentScale.updateAndGet(v -> new Float((float) (v + 0.1f)));
-                    imageView.setScaleX(currentScale.get());
-                    imageView.setScaleY(currentScale.get());
+                case "text":
+                    addText();
                     break;
-                case "scale_down":
-                    currentScale.set(Math.max(0.1f, currentScale.get() - 0.1f));
-                    imageView.setScaleX(currentScale.get());
-                    imageView.setScaleY(currentScale.get());
+                case "brush":
+                    enableBrushDrawing();
+                    break;
+                case "emoji":
+                    addEmoji();
+                    break;
+                case "sticker":
+                    addSticker();
+                    break;
+                case "filter":
+                    applyFilter();
                     break;
                 case "crop":
-                    // 使用 uCrop 裁剪，确保你添加了 uCrop 依赖
-                    Uri sourceUri = Uri.parse(getIntent().getStringExtra("imageUri"));
-                    Uri destinationUri = Uri.fromFile(new File(getCacheDir(), "cropped.jpg"));
-
+                    // Uri sourceUri = Uri.parse(getIntent().getStringExtra("imageUri"));
+                    Uri sourceUri = ImageViewUtils.getImageViewUri(this, imageView);
+                    Uri destinationUri = Uri.fromFile(new File(getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
                     UCrop.of(sourceUri, destinationUri)
                             .withAspectRatio(1, 1)
                             .withMaxResultSize(1000, 1000)
@@ -115,7 +134,49 @@ public class PictureEditActivity extends AppCompatActivity {
             }
         });
         recyclerView.setAdapter(itemAdapter);
+
+
+
+        findViewById(R.id.imageButton_save).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                saveImage();
+            }
+        });
+
+        findViewById(R.id.imageButton_return).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+
+        findViewById(R.id.imageButton_undo).setVisibility(View.INVISIBLE);
+        findViewById(R.id.imageButton_undo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                photoEditor.undo();
+            }
+        });
+
+        findViewById(R.id.imageButton_redo).setVisibility(View.INVISIBLE);
+        findViewById(R.id.imageButton_redo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                photoEditor.redo();
+            }
+        });
+
+        // 返回操作回调
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                finish();
+            }
+        });
     }
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -127,5 +188,304 @@ public class PictureEditActivity extends AppCompatActivity {
             final Throwable cropError = UCrop.getError(data);
             Toast.makeText(this, "裁剪失败", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void loadImageFromIntent() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            String imageUriExtra = intent.getStringExtra("imageUri");
+            if (imageUriExtra != null) {
+                Uri imageUri = Uri.parse(imageUriExtra);
+                try {
+                    photoEditorView.getSource().setImageURI(imageUri);
+                } catch (Exception e) {
+                    Toast.makeText(this, "加载图片失败", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void rotateImage() {
+        Drawable drawable = photoEditorView.getSource().getDrawable();
+        if (drawable == null || !(drawable instanceof BitmapDrawable)) {
+            Toast.makeText(this, "无法旋转：未找到有效图片", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Bitmap originalBitmap = ((BitmapDrawable) drawable).getBitmap();
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90);
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(
+                originalBitmap,
+                0,
+                0,
+                originalBitmap.getWidth(),
+                originalBitmap.getHeight(),
+                matrix,
+                true
+        );
+        photoEditorView.getSource().setImageBitmap(rotatedBitmap);
+    }
+
+
+    private void addText() {
+        // 添加文字
+        photoEditor.addText("输入文字", Color.BLACK);
+
+        photoEditor.setOnPhotoEditorListener(new OnPhotoEditorListener() {
+            @Override
+            public void onEditTextChangeListener(View rootView, String text, int colorCode) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(rootView.getContext());
+                builder.setTitle("编辑文字");
+
+                final EditText input = new EditText(rootView.getContext());
+                input.setInputType(InputType.TYPE_CLASS_TEXT);
+                input.setText(text);
+                builder.setView(input);
+
+                builder.setPositiveButton("确定", (dialog, which) -> {
+                    photoEditor.editText(rootView, input.getText().toString(), colorCode);
+                });
+                builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
+                builder.show();
+            }
+            @Override
+            public void onTouchSourceImage(@NonNull MotionEvent motionEvent) {}
+            @Override
+            public void onStopViewChangeListener(@NonNull ViewType viewType) {}
+            @Override
+            public void onStartViewChangeListener(@NonNull ViewType viewType) {}
+            @Override
+            public void onRemoveViewListener(@NonNull ViewType viewType, int i) {}
+            @Override
+            public void onAddViewListener(@NonNull ViewType viewType, int i) {}
+        });
+    }
+
+    private void showTextInputDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("添加文字");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("确定", (dialog, which) -> {
+            String text = input.getText().toString();
+            if (!text.isEmpty()) {
+                photoEditor.addText(text, Color.BLACK);
+            }
+        });
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void enableBrushDrawing() {
+        // 启用画笔模式
+        photoEditor.setBrushDrawingMode(true);
+
+        // 设置画笔颜色和大小
+        photoEditor.setBrushColor(Color.RED);
+        photoEditor.setBrushSize(10f);
+
+        // 显示画笔设置对话框
+        showBrushOptionsDialog();
+    }
+
+    private void showBrushOptionsDialog() {
+        // AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // builder.setTitle("画笔设置");
+        //
+        // View dialogView = getLayoutInflater().inflate(R.layout.dialog_brush_options, null);
+        // builder.setView(dialogView);
+        //
+        // // 假设布局中有颜色选择和大小调节控件
+        // SeekBar sizeSeekBar = dialogView.findViewById(R.id.seekBar_brush_size);
+        // sizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        //     @Override
+        //     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        //         photoEditor.setBrushSize(progress + 1f);
+        //     }
+        //
+        //     @Override
+        //     public void onStartTrackingTouch(SeekBar seekBar) {}
+        //
+        //     @Override
+        //     public void onStopTrackingTouch(SeekBar seekBar) {}
+        // });
+        //
+        // builder.setPositiveButton("完成", null);
+        // builder.show();
+    }
+
+    private void addEmoji() {
+        // 添加表情符号
+        // photoEditor.addEmoji("😀");
+        // 表情选择器
+        showEmojiPicker();
+    }
+
+    private void showEmojiPicker() {
+        String[] emojis = {"😀", "😂", "😍", "😢", "😡", "👍", "❤️", "🎉"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择表情");
+
+        GridView gridView = new GridView(this);
+        gridView.setNumColumns(4);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1, emojis) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView textView = (TextView) super.getView(position, convertView, parent);
+                textView.setTextSize(24);
+                textView.setGravity(Gravity.CENTER);
+                return textView;
+            }
+        };
+
+        gridView.setAdapter(adapter);
+        gridView.setOnItemClickListener((parent, view, position, id) -> {
+            photoEditor.addEmoji(emojis[position]);
+        });
+
+        builder.setView(gridView);
+        builder.setNegativeButton("取消", null);
+        builder.show();
+    }
+
+    // 添加贴纸
+    private void addSticker() {
+        Bitmap stickerBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ar_stickers_24px);
+        if (stickerBitmap == null) {
+            Toast.makeText(this, "加载贴纸失败", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        photoEditor.addImage(stickerBitmap);
+    }
+
+    private void applyFilter() {
+        // 应用滤镜
+        showFilterDialog();
+    }
+
+    private void showFilterDialog() {
+        String[] filters = {"原图", "黑白", "复古", "冷色调", "暖色调"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择滤镜");
+        builder.setItems(filters, (dialog, which) -> {
+            switch (which) {
+                case 0:
+                    // photoEditor.clearAllViews(); // 清除所有效果
+                    applyOriginFilter();
+                    break;
+                case 1:
+                    applyGrayscaleFilter();
+                    break;
+                case 2:
+                    applyVintageFilter();
+                    break;
+                case 3:
+                    applyCoolFilter();
+                    break;
+                case 4:
+                    applyWarmFilter();
+                    break;
+            }
+        });
+        builder.show();
+    }
+
+    private void applyOriginFilter() {
+        // 应用冷色调滤镜
+        ColorMatrix colorMatrix = new ColorMatrix();
+        float[] coolMatrix = {
+                1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+        };
+        colorMatrix.set(coolMatrix);
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
+        photoEditorView.getSource().setColorFilter(filter);
+    }
+
+    private void applyGrayscaleFilter() {
+        // 应用黑白滤镜
+        ColorMatrix colorMatrix = new ColorMatrix();
+        colorMatrix.setSaturation(0); // 设置饱和度为0实现黑白效果
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
+        photoEditorView.getSource().setColorFilter(filter);
+    }
+
+    private void applyVintageFilter() {
+        // 应用复古滤镜
+        ColorMatrix colorMatrix = new ColorMatrix();
+        colorMatrix.setSaturation(0.6f);
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
+        photoEditorView.getSource().setColorFilter(filter);
+    }
+
+    private void applyCoolFilter() {
+        // 应用冷色调滤镜
+        ColorMatrix colorMatrix = new ColorMatrix();
+        float[] coolMatrix = {
+                1.0f, 0.0f, 0.2f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.2f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+        };
+        colorMatrix.set(coolMatrix);
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
+        photoEditorView.getSource().setColorFilter(filter);
+    }
+
+    private void applyWarmFilter() {
+        // 应用暖色调滤镜
+        ColorMatrix colorMatrix = new ColorMatrix();
+        float[] warmMatrix = {
+                1.2f, 0.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.8f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+        };
+        colorMatrix.set(warmMatrix);
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
+        photoEditorView.getSource().setColorFilter(filter);
+    }
+
+    private void cropImage() {
+        // PhotoEditor不直接支持裁剪，可以集成其他库如uCrop
+        Toast.makeText(this, "裁剪功能需要集成额外的库", Toast.LENGTH_SHORT).show();
+    }
+
+    private void saveImage() {
+        // 保存编辑后的图片
+        SaveSettings saveSettings = new SaveSettings.Builder()
+                .setClearViewsEnabled(true)
+                .setTransparencyEnabled(true)
+                .build();
+
+        photoEditor.saveAsFile(getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/" + System.currentTimeMillis() + ".jpg",
+                saveSettings, new PhotoEditor.OnSaveListener() {
+                    @Override
+                    public void onSuccess(@NonNull String imagePath) {
+                        Toast.makeText(PictureEditActivity.this, "图片保存成功: " + imagePath, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        Toast.makeText(PictureEditActivity.this, "保存失败: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }
