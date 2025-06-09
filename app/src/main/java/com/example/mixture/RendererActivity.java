@@ -1,6 +1,11 @@
 package com.example.mixture;
 
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -12,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -19,8 +25,15 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.tinyrenderer.NativeLib;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class RendererActivity extends AppCompatActivity {
     private static String TAG = "DUMPA1N";
+    private static boolean hasCopied = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +45,8 @@ public class RendererActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        copyAssetsWithLoading(this);
 
         SurfaceView surfaceView = findViewById(R.id.surfaceView);
 
@@ -124,5 +139,65 @@ public class RendererActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
+    }
+
+    public void copyAssetsWithLoading(Context context) {
+        if (hasCopied) return;
+        hasCopied = true;
+        ProgressDialog progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("正在复制模型文件，请稍候...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            copyAssets(context, "models", context.getFilesDir().getAbsolutePath() + "/models");
+
+            // 回到主线程关闭加载圈
+            ((Activity) context).runOnUiThread(progressDialog::dismiss);
+        }).start();
+    }
+
+    public static void copyAssets(Context context, String assetPath, String targetPath) {
+        AssetManager assetManager = context.getAssets();
+        try {
+            String[] assets = assetManager.list(assetPath);
+            if (assets != null && assets.length > 0) {
+                File targetDir = new File(targetPath);
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs();
+                }
+                for (String file : assets) {
+                    copyAssets(context, assetPath + "/" + file, targetPath + "/" + file);
+                }
+            } else {
+                copyAssetFile(context, assetPath, targetPath);
+                Log.i(TAG, "copyAssets: " + assetPath + " to " + targetPath);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void copyAssetFile(Context context, String assetPath, String targetPath) {
+        AssetManager assetManager = context.getAssets();
+        File outFile = new File(targetPath);
+
+        try (InputStream in = assetManager.open(assetPath);
+             OutputStream out = new FileOutputStream(outFile)) {
+
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

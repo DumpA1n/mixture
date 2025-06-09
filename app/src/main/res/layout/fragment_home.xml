@@ -11,30 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <Button
-            android:id="@+id/button_renderer"
-            android:layout_width="130dp"
-            android:layout_height="80dp"
-            android:text="软渲染器"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.231"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.307" />
-
-        <Button
-            android:id="@+id/button_picture_editor"
-            android:layout_width="130dp"
-            android:layout_height="80dp"
-            android:text="图片处理"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.747"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.307" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>
