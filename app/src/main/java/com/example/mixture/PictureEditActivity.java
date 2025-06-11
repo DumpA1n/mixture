@@ -16,6 +16,7 @@ import android.os.Environment;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,11 +39,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mixture.BrushDetails.BrushDetailsAdapter;
 import com.example.mixture.BrushDetails.BrushDetailsViewModel;
+import com.example.mixture.ImageEffect.EffectAdapter;
+import com.example.mixture.ImageEffect.EffectType;
+import com.example.mixture.ImageEffect.ImageEffectUtils;
 import com.example.mixture.UniversalItems.ItemAdapter;
 import com.example.mixture.UniversalItems.ItemViewModel;
 import com.example.mixture.Utils.ImageViewUtils;
@@ -52,6 +57,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
@@ -105,8 +111,9 @@ public class PictureEditActivity extends AppCompatActivity {
         itemList.add(new ItemViewModel(R.drawable.text_fields_24px, "文字", "text"));
         itemList.add(new ItemViewModel(R.drawable.draw_24px, "画笔", "brush"));
         itemList.add(new ItemViewModel(R.drawable.add_reaction_24px, "表情", "emoji"));
-        // itemList.add(new ItemViewModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
-        itemList.add(new ItemViewModel(R.drawable.filter_vintage_24px, "滤镜", "filter"));
+        itemList.add(new ItemViewModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
+        itemList.add(new ItemViewModel(R.drawable.filter_vintage_24px, "特效", "effect"));
+        itemList.add(new ItemViewModel(R.drawable.filter_24px, "滤镜", "filter"));
 
         ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
             switch (item.actionType) {
@@ -124,6 +131,9 @@ public class PictureEditActivity extends AppCompatActivity {
                     break;
                 case "sticker":
                     addSticker();
+                    break;
+                case "effect":
+                    addEffect();
                     break;
                 case "filter":
                     applyFilter();
@@ -379,6 +389,56 @@ public class PictureEditActivity extends AppCompatActivity {
         }
         photoEditor.addImage(stickerBitmap);
     }
+
+    private void addEffect() {
+        // 创建效果选择对话框
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // builder.setTitle("选择特效");
+
+        // 创建效果列表
+        List<EffectType> effectList = Arrays.asList(EffectType.values());
+
+        // 创建自定义布局
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_effects, null);
+        RecyclerView effectRecyclerView = dialogView.findViewById(R.id.effect_recycler_view);
+
+        // 设置网格布局
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 3);
+        effectRecyclerView.setLayoutManager(gridLayoutManager);
+
+        // 创建适配器
+        EffectAdapter effectAdapter = new EffectAdapter(effectList, imageView, effectType -> {
+            // 应用选中的特效
+            ImageEffectUtils.applyEffect(imageView, effectType);
+
+            // 显示应用成功的提示
+            Toast.makeText(this, "已应用" + effectType.getDisplayName() + "特效", Toast.LENGTH_SHORT).show();
+
+            // 关闭对话框
+            if (effectDialog != null && effectDialog.isShowing()) {
+                effectDialog.dismiss();
+            }
+        });
+
+        effectRecyclerView.setAdapter(effectAdapter);
+        builder.setView(dialogView);
+
+        // 添加取消按钮
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+
+        // 添加清除效果按钮
+        builder.setNeutralButton("清除效果", (dialog, which) -> {
+            ImageEffectUtils.applyEffect(imageView, EffectType.NONE);
+            Toast.makeText(this, "已清除所有特效", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        effectDialog = builder.create();
+        effectDialog.show();
+    }
+
+    // 类成员变量
+    private AlertDialog effectDialog;
 
     private void applyFilter() {
         // 应用滤镜
