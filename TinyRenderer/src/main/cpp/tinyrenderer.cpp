@@ -182,6 +182,8 @@ Java_com_example_tinyrenderer_NativeLib_stopRender(JNIEnv* env, jobject /* this 
         renderThread.join();
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds (100));
+
     // // 创建 ANativeWindow
     // ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
     // if (!window) {

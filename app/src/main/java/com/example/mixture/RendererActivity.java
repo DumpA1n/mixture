@@ -83,7 +83,6 @@ public class RendererActivity extends AppCompatActivity {
 
 
 
-
         recyclerView = findViewById(R.id.recyclerView_objs);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
@@ -123,39 +122,6 @@ public class RendererActivity extends AppCompatActivity {
         recyclerView.setAdapter(itemAdapter);
 
 
-
-        // findViewById(R.id.render_africa_head).setOnClickListener(new View.OnClickListener() {
-        //     @Override
-        //     public void onClick(View view) {
-        //         n.stopRender(surfaceView.getHolder().getSurface());
-        //         if (n.isRendering() == 0) {
-        //             n.startRender(surfaceView.getHolder().getSurface(), "africa_head");
-        //             Toast.makeText(getApplicationContext(), "开始渲染 [非洲头]", Toast.LENGTH_LONG).show();
-        //         }
-        //     }
-        // });
-        //
-        // findViewById(R.id.render_spot).setOnClickListener(new View.OnClickListener() {
-        //     @Override
-        //     public void onClick(View view) {
-        //         n.stopRender(surfaceView.getHolder().getSurface());
-        //         if (n.isRendering() == 0) {
-        //             n.startRender(surfaceView.getHolder().getSurface(), "spot");
-        //             Toast.makeText(getApplicationContext(), "开始渲染 [牛牛]", Toast.LENGTH_LONG).show();
-        //         }
-        //     }
-        // });
-        //
-        // findViewById(R.id.render_diablo3_pose).setOnClickListener(new View.OnClickListener() {
-        //     @Override
-        //     public void onClick(View view) {
-        //         n.stopRender(surfaceView.getHolder().getSurface());
-        //         if (n.isRendering() == 0) {
-        //             n.startRender(surfaceView.getHolder().getSurface(), "diablo3_pose");
-        //             Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
-        //         }
-        //     }
-        // });
 
         Spinner spinner_AAMode = findViewById(R.id.spinner_AAMode);
         String[] options_AAMode = {"默认", "4xMSAA", "4xSSAA", "FXAA", "TAA"};

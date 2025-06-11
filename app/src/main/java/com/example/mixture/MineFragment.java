@@ -2,14 +2,19 @@ package com.example.mixture;
 
 import static androidx.core.app.ActivityCompat.recreate;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -78,6 +83,7 @@ public class MineFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.recyclerView_settings);
         List<SettingsViewModel> items = new ArrayList<>();
         items.add(new SettingsViewModel(R.drawable.folder_24px, "文件保存路径", false, false));
+        items.add(new SettingsViewModel(R.drawable.contrast_24px, "更改主题", false, false));
         items.add(new SettingsViewModel(R.drawable.language_24px, "更改语言", false, false));
         items.add(new SettingsViewModel(R.drawable.sync_24px, "检查更新", true, true));
 
@@ -87,6 +93,9 @@ public class MineFragment extends Fragment {
                     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                     intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivityForResult(intent, PictureEditActivity.GET_PATH_REQUEST_CODE);
+                    break;
+                case 1:
+                    showThemeDialog();
                     break;
             }
         });
@@ -104,7 +113,30 @@ public class MineFragment extends Fragment {
         return view;
     }
 
-    private void modifyPictureSavePath() {
+    private void showThemeDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("选择主题");
 
+        String[] themes = {"浅色主题", "深色主题"};
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        boolean isDark = prefs.getBoolean("is_dark_theme", false);
+        int checkedItem = isDark ? 1 : 0;
+
+        builder.setSingleChoiceItems(themes, checkedItem, (dialog, which) -> {
+            boolean newIsDark = (which == 1);
+            prefs.edit().putBoolean("is_dark_theme", newIsDark).apply();
+
+            if (newIsDark) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            }
+
+            dialog.dismiss();
+        });
+
+        builder.setNegativeButton("取消", null);
+        builder.show();
     }
 }

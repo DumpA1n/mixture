@@ -17,7 +17,7 @@
             android:layout_height="75dp"
             android:layout_marginStart="68dp"
             android:layout_marginTop="140dp"
-            android:text="软渲染器"
+            android:text="渲染器"
             app:cornerRadius="12dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

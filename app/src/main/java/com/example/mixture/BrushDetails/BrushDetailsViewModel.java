@@ -4,10 +4,23 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 public class BrushDetailsViewModel {
-    TextView textView;
-    SeekBar seekBar;
-    public BrushDetailsViewModel(TextView textView, SeekBar seekBar) {
-        this.textView = textView;
-        this.seekBar = seekBar;
+    public String label;
+    public int value;
+
+    public BrushDetailsViewModel(String label, int value) {
+        this.label = label;
+        this.value = value;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
     }
 }

@@ -8,7 +8,7 @@
     android:paddingBottom="16dp">
 
     <TextView
-        android:id="@+id/item_text"
+        android:id="@+id/brush_details_lable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
@@ -16,7 +16,7 @@
         android:textSize="14sp" />
 
     <SeekBar
-        android:id="@+id/seekBar"
+        android:id="@+id/brush_details_seekBar"
         android:layout_width="144dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp" />
