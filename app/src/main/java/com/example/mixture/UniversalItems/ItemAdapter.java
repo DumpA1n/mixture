@@ -1,4 +1,4 @@
-package com.example.mixture.EditorItemUI;
+package com.example.mixture.UniversalItems;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,14 +14,14 @@ import com.example.mixture.R;
 import java.util.List;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder> {
-    private List<ItemModel> itemList;
+    private List<ItemViewModel> itemList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onItemClick(ItemModel item);
+        void onItemClick(ItemViewModel item);
     }
 
-    public ItemAdapter(List<ItemModel> itemList, OnItemClickListener listener) {
+    public ItemAdapter(List<ItemViewModel> itemList, OnItemClickListener listener) {
         this.itemList = itemList;
         this.listener = listener;
     }
@@ -52,7 +52,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
             imageView = itemView.findViewById(R.id.item_image);
             textView = itemView.findViewById(R.id.item_text);
         }
-        public void bind(final ItemModel item) {
+        public void bind(final ItemViewModel item) {
             imageView.setImageResource(item.imageResId);
             textView.setText(item.text);
             itemView.setOnClickListener(v -> listener.onItemClick(item));

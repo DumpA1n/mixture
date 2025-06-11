@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -22,18 +23,27 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mixture.UniversalItems.ItemAdapter;
+import com.example.mixture.UniversalItems.ItemViewModel;
+import com.example.mixture.Utils.ImageViewUtils;
 import com.example.tinyrenderer.NativeLib;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RendererActivity extends AppCompatActivity {
     private static String TAG = "DUMPA1N";
     private static boolean hasCopied = false;
+    private RecyclerView recyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,38 +81,81 @@ public class RendererActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.render_africa_head).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                n.stopRender(surfaceView.getHolder().getSurface());
-                if (n.isRendering() == 0) {
-                    n.startRender(surfaceView.getHolder().getSurface(), "africa_head");
-                    Toast.makeText(getApplicationContext(), "开始渲染 [非洲头]", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
 
-        findViewById(R.id.render_spot).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                n.stopRender(surfaceView.getHolder().getSurface());
-                if (n.isRendering() == 0) {
-                    n.startRender(surfaceView.getHolder().getSurface(), "spot");
-                    Toast.makeText(getApplicationContext(), "开始渲染 [牛牛]", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
 
-        findViewById(R.id.render_diablo3_pose).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                n.stopRender(surfaceView.getHolder().getSurface());
-                if (n.isRendering() == 0) {
-                    n.startRender(surfaceView.getHolder().getSurface(), "diablo3_pose");
-                    Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
-                }
+
+        recyclerView = findViewById(R.id.recyclerView_objs);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+
+        List<ItemViewModel> itemList = new ArrayList<>();
+        itemList.add(new ItemViewModel(R.drawable.face_24px, "非洲头", "africa_head"));
+        itemList.add(new ItemViewModel(R.drawable.pets_24px, "牛牛", "spot"));
+        itemList.add(new ItemViewModel(R.drawable.skull_24px, "暗黑", "diablo3_pose"));
+
+        ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
+            switch (item.actionType) {
+                case "africa_head":
+                    surfaceView.destroyDrawingCache();
+                    n.stopRender(surfaceView.getHolder().getSurface());
+                    if (n.isRendering() == 0) {
+                        n.startRender(surfaceView.getHolder().getSurface(), "africa_head");
+                        Toast.makeText(getApplicationContext(), "开始渲染 [非洲头]", Toast.LENGTH_LONG).show();
+                    }
+                    break;
+                case "spot":
+                    surfaceView.destroyDrawingCache();
+                    n.stopRender(surfaceView.getHolder().getSurface());
+                    if (n.isRendering() == 0) {
+                        n.startRender(surfaceView.getHolder().getSurface(), "spot");
+                        Toast.makeText(getApplicationContext(), "开始渲染 [牛牛]", Toast.LENGTH_LONG).show();
+                    }
+                    break;
+                case "diablo3_pose":
+                    surfaceView.destroyDrawingCache();
+                    n.stopRender(surfaceView.getHolder().getSurface());
+                    if (n.isRendering() == 0) {
+                        n.startRender(surfaceView.getHolder().getSurface(), "diablo3_pose");
+                        Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
+                    }
+                    break;
             }
         });
+        recyclerView.setAdapter(itemAdapter);
+
+
+
+        // findViewById(R.id.render_africa_head).setOnClickListener(new View.OnClickListener() {
+        //     @Override
+        //     public void onClick(View view) {
+        //         n.stopRender(surfaceView.getHolder().getSurface());
+        //         if (n.isRendering() == 0) {
+        //             n.startRender(surfaceView.getHolder().getSurface(), "africa_head");
+        //             Toast.makeText(getApplicationContext(), "开始渲染 [非洲头]", Toast.LENGTH_LONG).show();
+        //         }
+        //     }
+        // });
+        //
+        // findViewById(R.id.render_spot).setOnClickListener(new View.OnClickListener() {
+        //     @Override
+        //     public void onClick(View view) {
+        //         n.stopRender(surfaceView.getHolder().getSurface());
+        //         if (n.isRendering() == 0) {
+        //             n.startRender(surfaceView.getHolder().getSurface(), "spot");
+        //             Toast.makeText(getApplicationContext(), "开始渲染 [牛牛]", Toast.LENGTH_LONG).show();
+        //         }
+        //     }
+        // });
+        //
+        // findViewById(R.id.render_diablo3_pose).setOnClickListener(new View.OnClickListener() {
+        //     @Override
+        //     public void onClick(View view) {
+        //         n.stopRender(surfaceView.getHolder().getSurface());
+        //         if (n.isRendering() == 0) {
+        //             n.startRender(surfaceView.getHolder().getSurface(), "diablo3_pose");
+        //             Toast.makeText(getApplicationContext(), "开始渲染 [暗黑破坏神]", Toast.LENGTH_LONG).show();
+        //         }
+        //     }
+        // });
 
         Spinner spinner_AAMode = findViewById(R.id.spinner_AAMode);
         String[] options_AAMode = {"默认", "4xMSAA", "4xSSAA", "FXAA", "TAA"};

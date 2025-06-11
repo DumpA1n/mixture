@@ -1,12 +1,27 @@
 package com.example.mixture;
 
+import static androidx.core.app.ActivityCompat.recreate;
+
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.Toast;
+
+import com.example.mixture.Settings.SettingsAdapter;
+import com.example.mixture.Settings.SettingsViewModel;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -58,7 +73,38 @@ public class MineFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_mine, container, false);
+
+        RecyclerView recyclerView = view.findViewById(R.id.recyclerView_settings);
+        List<SettingsViewModel> items = new ArrayList<>();
+        items.add(new SettingsViewModel(R.drawable.folder_24px, "文件保存路径", false, false));
+        items.add(new SettingsViewModel(R.drawable.language_24px, "更改语言", false, false));
+        items.add(new SettingsViewModel(R.drawable.sync_24px, "检查更新", true, true));
+
+        SettingsAdapter adapter = new SettingsAdapter(items, (item, position) -> {
+            switch (position) {
+                case 0:
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                    intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivityForResult(intent, PictureEditActivity.GET_PATH_REQUEST_CODE);
+                    break;
+            }
+        });
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        recyclerView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
+
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_mine, container, false);
+        return view;
+    }
+
+    private void modifyPictureSavePath() {
+
     }
 }

@@ -16,14 +16,12 @@ import android.os.Environment;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,25 +30,23 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
+import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.mixture.EditorItemUI.ItemAdapter;
-import com.example.mixture.EditorItemUI.ItemModel;
+import com.example.mixture.UniversalItems.ItemAdapter;
+import com.example.mixture.UniversalItems.ItemViewModel;
 import com.example.mixture.Utils.ImageViewUtils;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.concurrent.atomic.AtomicReference;
 
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
 import ja.burhanrashid52.photoeditor.PhotoEditorView;
@@ -63,6 +59,8 @@ public class PictureEditActivity extends AppCompatActivity {
     private PhotoEditor photoEditor;
     private ImageView imageView;
     private RecyclerView recyclerView;
+    private Uri selectedSaveUri = null;
+    public static final int GET_PATH_REQUEST_CODE = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,14 +89,14 @@ public class PictureEditActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView_item);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
-        List<ItemModel> itemList = new ArrayList<>();
-        itemList.add(new ItemModel(R.drawable.crop_24px, "裁剪", "crop"));
-        itemList.add(new ItemModel(R.drawable.rotate_90_degrees_cw_24px, "旋转", "rotate"));
-        itemList.add(new ItemModel(R.drawable.text_fields_24px, "文字", "text"));
-        itemList.add(new ItemModel(R.drawable.draw_24px, "画笔", "brush"));
-        itemList.add(new ItemModel(R.drawable.add_reaction_24px, "表情", "emoji"));
-        itemList.add(new ItemModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
-        itemList.add(new ItemModel(R.drawable.filter_vintage_24px, "滤镜", "filter"));
+        List<ItemViewModel> itemList = new ArrayList<>();
+        itemList.add(new ItemViewModel(R.drawable.crop_24px, "裁剪", "crop"));
+        itemList.add(new ItemViewModel(R.drawable.rotate_90_degrees_cw_24px, "旋转", "rotate"));
+        itemList.add(new ItemViewModel(R.drawable.text_fields_24px, "文字", "text"));
+        itemList.add(new ItemViewModel(R.drawable.draw_24px, "画笔", "brush"));
+        itemList.add(new ItemViewModel(R.drawable.add_reaction_24px, "表情", "emoji"));
+        itemList.add(new ItemViewModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
+        itemList.add(new ItemViewModel(R.drawable.filter_vintage_24px, "滤镜", "filter"));
 
         ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
             switch (item.actionType) {
@@ -140,7 +138,7 @@ public class PictureEditActivity extends AppCompatActivity {
         findViewById(R.id.imageButton_save).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                saveImage();
+                showSaveDialog();
             }
         });
 
@@ -187,6 +185,10 @@ public class PictureEditActivity extends AppCompatActivity {
         } else if (resultCode == UCrop.RESULT_ERROR) {
             final Throwable cropError = UCrop.getError(data);
             Toast.makeText(this, "裁剪失败", Toast.LENGTH_SHORT).show();
+        }
+        else if (requestCode == GET_PATH_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            selectedSaveUri = data.getData();
+            Toast.makeText(this, "已选择路径: " + selectedSaveUri.toString(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -286,39 +288,41 @@ public class PictureEditActivity extends AppCompatActivity {
         // 启用画笔模式
         photoEditor.setBrushDrawingMode(true);
 
+        // ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(this);
+
         // 设置画笔颜色和大小
         photoEditor.setBrushColor(Color.RED);
         photoEditor.setBrushSize(10f);
 
         // 显示画笔设置对话框
-        showBrushOptionsDialog();
+        // showBrushOptionsDialog();
     }
 
-    private void showBrushOptionsDialog() {
-        // AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        // builder.setTitle("画笔设置");
-        //
-        // View dialogView = getLayoutInflater().inflate(R.layout.dialog_brush_options, null);
-        // builder.setView(dialogView);
-        //
-        // // 假设布局中有颜色选择和大小调节控件
-        // SeekBar sizeSeekBar = dialogView.findViewById(R.id.seekBar_brush_size);
-        // sizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-        //     @Override
-        //     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        //         photoEditor.setBrushSize(progress + 1f);
-        //     }
-        //
-        //     @Override
-        //     public void onStartTrackingTouch(SeekBar seekBar) {}
-        //
-        //     @Override
-        //     public void onStopTrackingTouch(SeekBar seekBar) {}
-        // });
-        //
-        // builder.setPositiveButton("完成", null);
-        // builder.show();
-    }
+    // private void showBrushOptionsDialog() {
+    //     AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    //     builder.setTitle("画笔设置");
+    //
+    //     View dialogView = getLayoutInflater().inflate(R.layout.dialog_brush_options, null);
+    //     builder.setView(dialogView);
+    //
+    //     // 假设布局中有颜色选择和大小调节控件
+    //     SeekBar sizeSeekBar = dialogView.findViewById(R.id.seekBar_brush_size);
+    //     sizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+    //         @Override
+    //         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+    //             photoEditor.setBrushSize(progress + 1f);
+    //         }
+    //
+    //         @Override
+    //         public void onStartTrackingTouch(SeekBar seekBar) {}
+    //
+    //         @Override
+    //         public void onStopTrackingTouch(SeekBar seekBar) {}
+    //     });
+    //
+    //     builder.setPositiveButton("完成", null);
+    //     builder.show();
+    // }
 
     private void addEmoji() {
         // 添加表情符号
@@ -463,19 +467,32 @@ public class PictureEditActivity extends AppCompatActivity {
         photoEditorView.getSource().setColorFilter(filter);
     }
 
-    private void cropImage() {
-        // PhotoEditor不直接支持裁剪，可以集成其他库如uCrop
-        Toast.makeText(this, "裁剪功能需要集成额外的库", Toast.LENGTH_SHORT).show();
+    private void showSaveDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("保存图片")
+                .setMessage("是保存到相册？")
+                .setPositiveButton("是", (dialog, which) -> saveImage(true))  // 保存到相册
+                .setNegativeButton("否", (dialog, which) -> saveImage(false)) // 保存到内部目录
+                .show();
     }
 
-    private void saveImage() {
+    private void saveImage(boolean toAlbum) {
         // 保存编辑后的图片
         SaveSettings saveSettings = new SaveSettings.Builder()
-                .setClearViewsEnabled(true)
+                .setClearViewsEnabled(false)
                 .setTransparencyEnabled(true)
                 .build();
 
-        photoEditor.saveAsFile(getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/" + System.currentTimeMillis() + ".jpg",
+        String fileName = System.currentTimeMillis() + ".jpg";
+        String savePath;
+
+        if (toAlbum) {
+            savePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + fileName;
+        } else {
+            savePath = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + fileName;
+        }
+
+        photoEditor.saveAsFile(savePath,
                 saveSettings, new PhotoEditor.OnSaveListener() {
                     @Override
                     public void onSuccess(@NonNull String imagePath) {

@@ -23,19 +23,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:photo_src="@drawable/radio_button_unchecked_24px" />
 
-<!--        <ImageView-->
-<!--            android:id="@+id/imageView"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="0dp"-->
-<!--            android:background="#5DDECDCD"-->
-<!--            app:layout_constraintBottom_toTopOf="@+id/recyclerView_item"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintHorizontal_bias="0.0"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:layout_constraintVertical_bias="0.0"-->
-<!--            tools:srcCompat="@tools:sample/avatars" />-->
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView_item"
             android:layout_width="0dp"
@@ -90,6 +77,33 @@
             app:layout_constraintEnd_toStartOf="@+id/imageButton_save"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/redo_24px" />
+
+        <!-- 二级列表覆盖层：默认隐藏 -->
+        <LinearLayout
+            android:id="@+id/overlay_container"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#CCFFFFFF"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageButton
+                android:id="@+id/button_overlay_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:src="@drawable/chevron_left_24px" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView_secondary"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
