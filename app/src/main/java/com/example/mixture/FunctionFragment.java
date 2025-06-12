@@ -94,6 +94,17 @@ public class FunctionFragment extends Fragment {
             }
         });
 
+        view.findViewById(R.id.button_shader_effect).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Intent intent = new Intent(Intent.ACTION_PICK);
+                // intent.setType("image/*");
+                // imagePickerLauncher.launch(intent);
+                Intent intent = new Intent(getActivity(), ShaderExampleActivity.class);
+                startActivity(intent);
+            }
+        });
+
         // Inflate the layout for this fragment
         return view;
     }

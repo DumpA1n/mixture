@@ -30,7 +30,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:src="@drawable/check_circle_24px"
-                    android:tint="@android:color/white" />
+                    app:tint="@android:color/white" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -127,7 +127,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="KernelPatch 版本"
+                        android:text="Renderer Engine 版本"
                         android:textColor="#333333"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -136,13 +136,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="0.10.7"
+                        android:text="1.0.0"
                         android:textColor="#666666"
                         android:textSize="14sp" />
 
                 </LinearLayout>
 
-                <!-- SU 程序路径 -->
+                <!-- 模型文件路径 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -152,22 +152,23 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SU 程序路径"
+                        android:text="模型文件路径"
                         android:textColor="#333333"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_model_saved_path"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="/system/bin/su"
+                        android:text="/path/to/"
                         android:textColor="#666666"
                         android:textSize="14sp" />
 
                 </LinearLayout>
 
-                <!-- APatch 版本 -->
+                <!-- 图片储存路径 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -177,16 +178,17 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="APatch 版本"
+                        android:text="图片储存路径"
                         android:textColor="#333333"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_picture_saved_path"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="10763"
+                        android:text="/path/to/"
                         android:textColor="#666666"
                         android:textSize="14sp" />
 
@@ -208,6 +210,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_device_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -233,6 +236,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_kernel_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -258,6 +262,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_system_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -283,6 +288,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_fingerprint"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -307,6 +313,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textView_selinux"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"

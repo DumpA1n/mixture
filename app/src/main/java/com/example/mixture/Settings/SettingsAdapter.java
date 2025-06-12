@@ -64,6 +64,14 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingsAdapter.ViewHo
         return items.size();
     }
 
+    public void updateItemDescription(int position, String newDescription) {
+        if (position >= 0 && position < items.size()) {
+            SettingsViewModel item = items.get(position);
+            item.setDescription(newDescription); // 假设SettingsViewModel有setDescription方法
+            notifyItemChanged(position);
+        }
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView icon;
         TextView title;

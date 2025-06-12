@@ -4,21 +4,18 @@
     android:layout_height="wrap_content"
     android:gravity="center"
     android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
-    android:paddingBottom="16dp">
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/brush_details_lable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
         android:text="文本"
         android:textSize="14sp" />
 
     <SeekBar
         android:id="@+id/brush_details_seekBar"
-        android:layout_width="144dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp" />
+        android:layout_width="256dp"
+        android:layout_height="match_parent" />
 
 </LinearLayout>

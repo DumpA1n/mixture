@@ -15,10 +15,10 @@
             android:id="@+id/button_renderer"
             android:layout_width="275dp"
             android:layout_height="75dp"
-            android:layout_marginStart="68dp"
             android:layout_marginTop="140dp"
             android:text="渲染器"
             app:cornerRadius="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -31,6 +31,16 @@
             app:cornerRadius="12dp"
             app:layout_constraintEnd_toEndOf="@+id/button_renderer"
             app:layout_constraintTop_toBottomOf="@+id/button_renderer" />
+
+        <Button
+            android:id="@+id/button_shader_effect"
+            android:layout_width="275dp"
+            android:layout_height="75dp"
+            android:layout_marginTop="16dp"
+            android:text="Shader特效"
+            app:cornerRadius="12dp"
+            app:layout_constraintEnd_toEndOf="@+id/button_picture_editor"
+            app:layout_constraintTop_toBottomOf="@+id/button_picture_editor" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

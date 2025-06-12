@@ -1,6 +1,7 @@
 package com.example.mixture;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -45,6 +46,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mixture.BrushDetails.BrushDetailsAdapter;
 import com.example.mixture.BrushDetails.BrushDetailsViewModel;
+import com.example.mixture.ColorPicker.ColorPickerAdapter;
 import com.example.mixture.ImageEffect.EffectAdapter;
 import com.example.mixture.ImageEffect.EffectType;
 import com.example.mixture.ImageEffect.ImageEffectUtils;
@@ -72,7 +74,6 @@ public class PictureEditActivity extends AppCompatActivity {
     private ImageView imageView;
     private RecyclerView recyclerView;
     private Uri selectedSaveUri = null;
-    public static final int GET_PATH_REQUEST_CODE = 1001;
     private boolean isBrushEnabel = false;
     private List<BrushDetailsViewModel> mBrushDetailsItems;
     private BrushDetailsAdapter mBrushDetailsAdapter;
@@ -111,9 +112,9 @@ public class PictureEditActivity extends AppCompatActivity {
         itemList.add(new ItemViewModel(R.drawable.text_fields_24px, "文字", "text"));
         itemList.add(new ItemViewModel(R.drawable.draw_24px, "画笔", "brush"));
         itemList.add(new ItemViewModel(R.drawable.add_reaction_24px, "表情", "emoji"));
-        itemList.add(new ItemViewModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
-        itemList.add(new ItemViewModel(R.drawable.filter_vintage_24px, "特效", "effect"));
-        itemList.add(new ItemViewModel(R.drawable.filter_24px, "滤镜", "filter"));
+        // itemList.add(new ItemViewModel(R.drawable.ar_stickers_24px, "贴纸", "sticker"));
+        itemList.add(new ItemViewModel(R.drawable.filter_vintage_24px, "滤镜", "effect"));
+        // itemList.add(new ItemViewModel(R.drawable.filter_24px, "滤镜", "filter"));
 
         ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
             switch (item.actionType) {
@@ -133,11 +134,11 @@ public class PictureEditActivity extends AppCompatActivity {
                     addSticker();
                     break;
                 case "effect":
-                    addEffect();
+                    addFilter();
                     break;
-                case "filter":
-                    applyFilter();
-                    break;
+                // case "filter":
+                //     applyFilter();
+                //     break;
                 case "crop":
                     Uri sourceUri = ImageViewUtils.getImageViewUri(this, imageView);
                     Uri destinationUri = Uri.fromFile(new File(getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg"));
@@ -185,7 +186,7 @@ public class PictureEditActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.imageButton_undo).setVisibility(View.INVISIBLE);
+        // findViewById(R.id.imageButton_undo).setVisibility(View.INVISIBLE);
         findViewById(R.id.imageButton_undo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -193,7 +194,7 @@ public class PictureEditActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.imageButton_redo).setVisibility(View.INVISIBLE);
+        // findViewById(R.id.imageButton_redo).setVisibility(View.INVISIBLE);
         findViewById(R.id.imageButton_redo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -221,10 +222,6 @@ public class PictureEditActivity extends AppCompatActivity {
         } else if (resultCode == UCrop.RESULT_ERROR) {
             final Throwable cropError = UCrop.getError(data);
             Toast.makeText(this, "裁剪失败", Toast.LENGTH_SHORT).show();
-        }
-        else if (requestCode == GET_PATH_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            selectedSaveUri = data.getData();
-            Toast.makeText(this, "已选择路径: " + selectedSaveUri.toString(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -320,6 +317,8 @@ public class PictureEditActivity extends AppCompatActivity {
         builder.show();
     }
 
+    private ColorPickerAdapter colorPickerAdapter;
+    private RecyclerView colorPickerRecyclerView;
     private void enableBrushDrawing() {
         // 显示二级菜单
         ConstraintLayout overlayContainer = findViewById(R.id.overlay_container);
@@ -328,19 +327,65 @@ public class PictureEditActivity extends AppCompatActivity {
         if (isBrushEnabel) {
             photoEditor.setBrushDrawingMode(false);
             overlayContainer.setVisibility(View.GONE);
-            isBrushEnabel  = false;
+            isBrushEnabel = false;
+            findViewById(R.id.imageButton_undo).setVisibility(View.GONE);
+            findViewById(R.id.imageButton_redo).setVisibility(View.GONE);
             return;
         } else {
             photoEditor.setBrushDrawingMode(true);
             overlayContainer.setVisibility(View.VISIBLE);
-            isBrushEnabel  = true;
+            findViewById(R.id.imageButton_undo).setVisibility(View.VISIBLE);
+            findViewById(R.id.imageButton_redo).setVisibility(View.VISIBLE);
+            isBrushEnabel = true;
         }
 
-        // ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(this);
+        // 初始化颜色选择器
+        setupColorPicker();
 
-        // 设置画笔颜色和大小
+        // 设置默认画笔颜色和大小
         photoEditor.setBrushColor(Color.RED);
         photoEditor.setBrushSize((float) mBrushDetailsItems.get(0).getValue());
+    }
+
+    private void setupColorPicker() {
+        // 假设您的overlay_container中包含一个RecyclerView用于颜色选择
+        colorPickerRecyclerView = findViewById(R.id.rv_color_picker);
+
+        if (colorPickerRecyclerView != null) {
+            // 初始化适配器
+            colorPickerAdapter = new ColorPickerAdapter(this);
+
+            // 设置颜色选择监听器
+            colorPickerAdapter.setOnColorPickerClickListener(colorCode -> {
+                // 更新画笔颜色
+                photoEditor.setBrushColor(colorCode);
+            });
+
+            // 设置RecyclerView
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+            colorPickerRecyclerView.setLayoutManager(layoutManager);
+            colorPickerRecyclerView.setAdapter(colorPickerAdapter);
+
+            // 设置默认选中红色
+            colorPickerAdapter.setSelectedColor(Color.RED);
+        }
+    }
+
+    private void showColorPickerDialog() {
+        // 使用第三方颜色选择器库或自定义对话框
+        // 例如使用ColorPickerDialog库
+    /*
+    ColorPickerDialog.Builder builder = new ColorPickerDialog.Builder(this)
+        .setTitle("选择颜色")
+        .setPositiveButton("确定", (dialogInterface, color, allColors) -> {
+            photoEditor.setBrushColor(color);
+            // 可以将自定义颜色添加到适配器中
+        })
+        .setNegativeButton("取消", (dialogInterface, color, allColors) -> {
+            // 取消操作
+        });
+    builder.show();
+    */
     }
 
     private void addEmoji() {
@@ -390,7 +435,9 @@ public class PictureEditActivity extends AppCompatActivity {
         photoEditor.addImage(stickerBitmap);
     }
 
-    private void addEffect() {
+
+    private AlertDialog effectDialog;
+    private void addFilter() {
         // 创建效果选择对话框
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         // builder.setTitle("选择特效");
@@ -437,105 +484,6 @@ public class PictureEditActivity extends AppCompatActivity {
         effectDialog.show();
     }
 
-    // 类成员变量
-    private AlertDialog effectDialog;
-
-    private void applyFilter() {
-        // 应用滤镜
-        showFilterDialog();
-    }
-
-    private void showFilterDialog() {
-        String[] filters = {"原图", "黑白", "复古", "冷色调", "暖色调"};
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择滤镜");
-        builder.setItems(filters, (dialog, which) -> {
-            switch (which) {
-                case 0:
-                    // photoEditor.clearAllViews(); // 清除所有效果
-                    applyOriginFilter();
-                    break;
-                case 1:
-                    applyGrayscaleFilter();
-                    break;
-                case 2:
-                    applyVintageFilter();
-                    break;
-                case 3:
-                    applyCoolFilter();
-                    break;
-                case 4:
-                    applyWarmFilter();
-                    break;
-            }
-        });
-        builder.show();
-    }
-
-    private void applyOriginFilter() {
-        // 应用冷色调滤镜
-        ColorMatrix colorMatrix = new ColorMatrix();
-        float[] coolMatrix = {
-                1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
-        };
-        colorMatrix.set(coolMatrix);
-
-        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-        photoEditorView.getSource().setColorFilter(filter);
-    }
-
-    private void applyGrayscaleFilter() {
-        // 应用黑白滤镜
-        ColorMatrix colorMatrix = new ColorMatrix();
-        colorMatrix.setSaturation(0); // 设置饱和度为0实现黑白效果
-
-        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-        photoEditorView.getSource().setColorFilter(filter);
-    }
-
-    private void applyVintageFilter() {
-        // 应用复古滤镜
-        ColorMatrix colorMatrix = new ColorMatrix();
-        colorMatrix.setSaturation(0.6f);
-
-        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-        photoEditorView.getSource().setColorFilter(filter);
-    }
-
-    private void applyCoolFilter() {
-        // 应用冷色调滤镜
-        ColorMatrix colorMatrix = new ColorMatrix();
-        float[] coolMatrix = {
-                1.0f, 0.0f, 0.2f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.2f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
-        };
-        colorMatrix.set(coolMatrix);
-
-        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-        photoEditorView.getSource().setColorFilter(filter);
-    }
-
-    private void applyWarmFilter() {
-        // 应用暖色调滤镜
-        ColorMatrix colorMatrix = new ColorMatrix();
-        float[] warmMatrix = {
-                1.2f, 0.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.8f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
-        };
-        colorMatrix.set(warmMatrix);
-
-        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-        photoEditorView.getSource().setColorFilter(filter);
-    }
-
     private void showSaveDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("保存图片")
@@ -545,6 +493,8 @@ public class PictureEditActivity extends AppCompatActivity {
                 .show();
     }
 
+    private static String savePath;
+
     private void saveImage(boolean toAlbum) {
         // 保存编辑后的图片
         SaveSettings saveSettings = new SaveSettings.Builder()
@@ -553,12 +503,13 @@ public class PictureEditActivity extends AppCompatActivity {
                 .build();
 
         String fileName = System.currentTimeMillis() + ".jpg";
-        String savePath;
 
         if (toAlbum) {
             savePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + fileName;
         } else {
-            savePath = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + fileName;
+            String defaultSavePath = getFilesDir().getAbsolutePath() + "/Pictures";
+            SharedPreferences sharedPreferences = getSharedPreferences("picture_editor_cfg", MODE_PRIVATE);
+            savePath = sharedPreferences.getString("picture_save_path", defaultSavePath) + "/" + fileName;
         }
 
         photoEditor.saveAsFile(savePath,

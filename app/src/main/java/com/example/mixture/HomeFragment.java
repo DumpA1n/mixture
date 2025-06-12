@@ -1,14 +1,15 @@
 package com.example.mixture;
 
-import static android.app.Activity.RESULT_OK;
-
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.text.SpannableString;
@@ -19,10 +20,9 @@ import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 
-import com.google.android.material.appbar.MaterialToolbar;
+import java.io.File;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -109,9 +109,84 @@ public class HomeFragment extends Fragment {
         textView.setMovementMethod(LinkMovementMethod.getInstance()); // 使点击事件生效
         textView.setHighlightColor(Color.TRANSPARENT); // 点击时不要高亮背景
 
-
-
         // Inflate the layout for this fragment
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        updateTextViews(view);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateTextViews(getView());
+    }
+
+    private void updateTextViews(View view) {
+        if (view == null) return;
+
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("picture_editor_cfg", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        String modelPath = sharedPreferences.getString("model_save_path", null);
+        if (modelPath == null) {
+            modelPath = requireActivity().getFilesDir().getAbsolutePath() + "/models";
+            File targetDir = new File(modelPath);
+            if (!targetDir.exists()) {
+                targetDir.mkdirs();
+            }
+            editor.putString("model_save_path", modelPath);
+        }
+
+        String picturePath = sharedPreferences.getString("picture_save_path", null);
+        if (picturePath == null) {
+            picturePath = requireActivity().getFilesDir().getAbsolutePath() + "/Pictures";
+            File targetDir = new File(picturePath);
+            if (!targetDir.exists()) {
+                targetDir.mkdirs();
+            }
+            editor.putString("picture_save_path", picturePath);
+        }
+
+        String deviceName = sharedPreferences.getString("device_name", null);
+        if (deviceName == null) {
+            deviceName = Build.BRAND + " " + Build.MODEL;
+            editor.putString("device_name", deviceName);
+        }
+
+        String systemVersion = sharedPreferences.getString("system_version", null);
+        if (systemVersion == null) {
+            systemVersion = Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")";
+            editor.putString("system_version", systemVersion);
+        }
+
+        String fingerprint = sharedPreferences.getString("fingerprint", null);
+        if (fingerprint == null) {
+            fingerprint = Build.FINGERPRINT;
+            editor.putString("fingerprint", fingerprint);
+        }
+
+        String selinuxStatus = sharedPreferences.getString("selinux_status", null);
+        if (selinuxStatus == null) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                selinuxStatus = "强制模式";
+                // selinuxStatus = android.os.SELinux.isSELinuxEnforced() ? "强制模式" : "宽容模式";
+            } else {
+                selinuxStatus = "未知";
+            }
+            editor.putString("selinux_status", selinuxStatus);
+        }
+
+        editor.apply();
+
+        ((TextView) view.findViewById(R.id.textView_model_saved_path)).setText(modelPath);
+        ((TextView) view.findViewById(R.id.textView_picture_saved_path)).setText(picturePath);
+        ((TextView) view.findViewById(R.id.textView_device_name)).setText(deviceName);
+        ((TextView) view.findViewById(R.id.textView_system_version)).setText(systemVersion);
+        ((TextView) view.findViewById(R.id.textView_fingerprint)).setText(fingerprint);
+        ((TextView) view.findViewById(R.id.textView_selinux)).setText(selinuxStatus);
     }
 }
