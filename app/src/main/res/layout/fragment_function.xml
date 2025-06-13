@@ -38,6 +38,7 @@
             android:layout_height="75dp"
             android:layout_marginTop="16dp"
             android:text="Shader特效"
+            android:visibility="invisible"
             app:cornerRadius="12dp"
             app:layout_constraintEnd_toEndOf="@+id/button_picture_editor"
             app:layout_constraintTop_toBottomOf="@+id/button_picture_editor" />

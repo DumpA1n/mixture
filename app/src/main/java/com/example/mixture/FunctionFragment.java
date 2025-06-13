@@ -32,6 +32,18 @@ public class FunctionFragment extends Fragment {
                 }
             });
 
+    private final ActivityResultLauncher<Intent> shaderLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri imageUri = result.getData().getData(); // 获取图片URI
+                    if (imageUri != null){
+                        Intent intent = new Intent(getActivity(), ShaderExampleActivity.class);
+                        intent.putExtra("imageUri", imageUri.toString());
+                        startActivity(intent);
+                    }
+                }
+            });
+
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -97,11 +109,11 @@ public class FunctionFragment extends Fragment {
         view.findViewById(R.id.button_shader_effect).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Intent intent = new Intent(Intent.ACTION_PICK);
-                // intent.setType("image/*");
-                // imagePickerLauncher.launch(intent);
-                Intent intent = new Intent(getActivity(), ShaderExampleActivity.class);
-                startActivity(intent);
+                Intent intent = new Intent(Intent.ACTION_PICK);
+                intent.setType("image/*");
+                shaderLauncher.launch(intent);
+                // Intent intent = new Intent(getActivity(), ShaderExampleActivity.class);
+                // startActivity(intent);
             }
         });
 

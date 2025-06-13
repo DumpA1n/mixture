@@ -1,76 +1,109 @@
 package com.example.mixture;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mixture.ShaderEffect.ShaderImageProcessor;
 import com.example.mixture.ShaderEffect.ShaderImageView;
+import com.example.mixture.UniversalItems.ItemAdapter;
+import com.example.mixture.UniversalItems.ItemViewModel;
+import com.example.tinyrenderer.NativeLib;
 
-public class ShaderExampleActivity extends Activity {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShaderExampleActivity extends AppCompatActivity {
     private ShaderImageView shaderImageView;
     private Bitmap originalBitmap;
+    private RecyclerView recyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setupUI();
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_shader_example);
 
-        // 加载示例图片
-        originalBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.filter_24px);
-        shaderImageView.setImageBitmap(originalBitmap);
+        shaderImageView = findViewById(R.id.shaderImageView);
+
+        // 加载图片
+        loadBitmapFromIntent();
+
+        recyclerView = findViewById(R.id.recyclerView_shader_picker);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+
+        List<ItemViewModel> itemList = new ArrayList<>();
+        itemList.add(new ItemViewModel(R.drawable.check_circle_24px, "原图", "Original"));
+        itemList.add(new ItemViewModel(R.drawable.check_circle_24px, "灰度", "Grayscale"));
+
+        ItemAdapter itemAdapter = new ItemAdapter(itemList, item -> {
+            switch (item.actionType) {
+                case "Original":
+                    applyOriginalShader();
+                    Toast.makeText(getApplicationContext(), "原图", Toast.LENGTH_LONG).show();
+                    break;
+                case "Grayscale":
+                    applyGrayscaleShader();
+                    Toast.makeText(getApplicationContext(), "灰度", Toast.LENGTH_LONG).show();
+                    break;
+            }
+        });
+        recyclerView.setAdapter(itemAdapter);
     }
 
-    private void setupUI() {
-        // 创建布局
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+    private void adjustShaderViewRatio(Bitmap bitmap) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        float ratio = (float) width / height;
 
-        // 创建ShaderImageView
-        shaderImageView = new ShaderImageView(this);
-        android.widget.LinearLayout.LayoutParams imageParams =
-                new android.widget.LinearLayout.LayoutParams(800, 600);
-        layout.addView(shaderImageView, imageParams);
+        ViewGroup.LayoutParams params = shaderImageView.getLayoutParams();
 
-        // 创建按钮容器
-        android.widget.LinearLayout buttonLayout = new android.widget.LinearLayout(this);
-        buttonLayout.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        int fixedWidth = shaderImageView.getWidth();
+        if (fixedWidth == 0) fixedWidth = getResources().getDisplayMetrics().widthPixels;
 
-        // 原图按钮
-        Button originalBtn = new Button(this);
-        originalBtn.setText("原图");
-        originalBtn.setOnClickListener(v -> applyOriginalShader());
-        buttonLayout.addView(originalBtn);
+        params.width = fixedWidth;
+        params.height = (int) (fixedWidth / ratio);
+        shaderImageView.setLayoutParams(params);
+    }
 
-        // 灰度效果按钮
-        Button grayscaleBtn = new Button(this);
-        grayscaleBtn.setText("灰度");
-        grayscaleBtn.setOnClickListener(v -> applyGrayscaleShader());
-        buttonLayout.addView(grayscaleBtn);
+    private void loadBitmapFromIntent() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            String imageUriExtra = intent.getStringExtra("imageUri");
+            if (imageUriExtra != null) {
+                Uri imageUri = Uri.parse(imageUriExtra);
+                try {
+                    originalBitmap = getBitmapFromUri(this, imageUri);
+                    shaderImageView.setImageBitmap(originalBitmap);
+                    adjustShaderViewRatio(originalBitmap);
+                } catch (Exception e) {
+                    Toast.makeText(this, "加载图片失败", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
 
-        // 模糊效果按钮
-        Button blurBtn = new Button(this);
-        blurBtn.setText("模糊");
-        blurBtn.setOnClickListener(v -> applyBlurShader());
-        buttonLayout.addView(blurBtn);
-
-        // 边缘检测按钮
-        Button edgeBtn = new Button(this);
-        edgeBtn.setText("边缘检测");
-        edgeBtn.setOnClickListener(v -> applyEdgeDetectionShader());
-        buttonLayout.addView(edgeBtn);
-
-        // 波浪效果按钮
-        Button waveBtn = new Button(this);
-        waveBtn.setText("波浪动画");
-        waveBtn.setOnClickListener(v -> applyWaveShader());
-        buttonLayout.addView(waveBtn);
-
-        layout.addView(buttonLayout);
-        setContentView(layout);
+    public Bitmap getBitmapFromUri(Context context, Uri uri) throws IOException {
+        return MediaStore.Images.Media.getBitmap(context.getContentResolver(), uri);
     }
 
     /**
